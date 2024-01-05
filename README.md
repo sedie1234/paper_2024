@@ -4,10 +4,10 @@
 > 2. uppering이란 과정 만들기
 > 3. 성능측정
 
-# Install
+# 0. Install
 > onnx-mlir v0.4.1.2를 기준으로 함
 
-## requirements
+## 0.1 requirements
 > cmake (3.27 버전 확인)
 > protobuf (3.20 버전 확인)
 > ninja (pip로 설치, 1.10버전 확인)
@@ -16,14 +16,14 @@
 > numpy 등은 필요에 따라 설치
 > python명령어의 기본 경로를 python3.8(python3.10)으로 바꿔줄 것, python2버전으로 되어있는 경우 오류 발생
 
-## Install check
+## 0.2 Install check
 cmake --version
 protoc --version
 pip show ninja
 pip show torch
 pip show torchvision
 
-## install
+## 0.3 install
 
 ###ninja
 pip install ninja

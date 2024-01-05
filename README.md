@@ -1,4 +1,4 @@
-# paper_2024 : Uppering and Blocking on onnx-mlir for Acceler
+# paper_2024 : Uppering and Blocking on onnx-mlir for Accelerator
 
 > 1. onnx-mlir에서 지원하는 operation에 대해 acceleration card로 매핑할 수 있게 하기
 > 2. uppering이란 과정 만들기

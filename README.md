@@ -25,6 +25,6 @@ pip show torchvision
 
 ## 0.3 install
 
-###ninja
+### ninja
 pip install ninja
 

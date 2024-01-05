@@ -8,12 +8,12 @@
 > onnx-mlir v0.4.1.2를 기준으로 함
 
 ## 0.1 requirements
-> cmake (3.27 버전 확인)
-> protobuf (3.20 버전 확인)
-> ninja (pip로 설치, 1.10.2버전 확인, 1.11.1버전 확인)
-> torch (pip로 설치, 2.1.0버전 확인)
-> torchvision 설치 (pip로 설치, 0.16.0버전 확인)
-> numpy 등은 필요에 따라 설치
+> cmake (3.27 버전 확인)<br/>
+> protobuf (3.20 버전 확인)<br/>
+> ninja (pip로 설치, 1.10.2버전 확인, 1.11.1버전 확인)<br/>
+> torch (pip로 설치, 2.1.0버전 확인)<br/>
+> torchvision 설치 (pip로 설치, 0.16.0버전 확인)<br/>
+> numpy 등은 필요에 따라 설치<br/>
 > python명령어의 기본 경로를 python3.8(python3.10)으로 바꿔줄 것, python2버전으로 되어있는 경우 오류 발생
 
 ## 0.2 Install check

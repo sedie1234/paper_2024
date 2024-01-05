@@ -72,6 +72,7 @@ $ ./onnx-mlir --EmitONNXIR add.onnx
 $ cd onns-mlir/build/Debug/bin
 $ cp onnx-mlir ../../../docs/mnist_example
 $ cd ../../../docs/mnist_example
+$ ./onnx-mlir -O3 -EmitLib mnist.onnx
 $ cp ../../build/Debug/lib/*.so .
 $ python3 mnist-runPyRuntime.py
 ```

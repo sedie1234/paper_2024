@@ -48,4 +48,30 @@ $ git checkout tags/v0.4.1.2
 $ git submodule init && git submodule update --recursive
 $ cd ..
 $ sh onnxmlir-build.sh
+$ cd onnx-mlir/build/Debug/lib
+$ sudo cp *.so *.a /usr/local/lib/
+```
+
+# 1. Test
+
+## 1.1 add.onnx test(논문에 소개된 내용)
+1. add.onnx 모델생성
+2. add.onnx.mlir 생성확인
+```
+$ cd onns-mlir/build/Debug/bin
+$ cp onnx-mlir ../../docs/doc-example
+$ cd ../../docs/doc-example
+$ python3 gen_add_onnx.py
+$ ./onnx-mlir --EmitONNXIR add.onnx
+```
+
+## 1.2 mnist.onnx test
+1. [mnist.onnx](https://github.com/onnx/onnx-mlir/blob/main/docs/mnist_example/mnist.onnx)를 다운
+2. onnx-mlir/docs/mnist_example에 복사
+```
+$ cd onns-mlir/build/Debug/bin
+$ cp onnx-mlir ../../../docs/mnist_example
+$ cd ../../../docs/mnist_example
+$ cp ../../build/Debug/lib/*.so .
+$ python3 mnist-runPyRuntime.py
 ```

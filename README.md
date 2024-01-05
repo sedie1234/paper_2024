@@ -39,11 +39,11 @@ $ sh llvm-build.sh
 ```
 
 ### 0.4.2 onnx-mlir build
-
-> > git clone --recursive https://github.com/onnx/onnx-mlir.git
-> > cd onnx-mlir
-> > git checkout tags/v0.4.1.2
-> > git submodule init && git submodule update --recursive
-> > cd ..
-> > sh onnxmlir-build.sh
-
+```
+$ git clone --recursive https://github.com/onnx/onnx-mlir.git
+$ cd onnx-mlir
+$ git checkout tags/v0.4.1.2
+$ git submodule init && git submodule update --recursive
+$ cd ..
+$ sh onnxmlir-build.sh
+```

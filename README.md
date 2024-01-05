@@ -31,18 +31,18 @@ pip show torchvision<br/>
 
 ## 0.4 build
 ### 0.4.1 llvm build
-  git clone -n https://github.com/llvm/llvm-project.git
-  cd llvm-project && git checkout 91088978d712cd7b33610c59f69d87d5a39e3113 && cd ..
+> > git clone -n https://github.com/llvm/llvm-project.git
+> > cd llvm-project && git checkout 91088978d712cd7b33610c59f69d87d5a39e3113 && cd ..
 
-  sh llvm-build.sh
+> > sh llvm-build.sh
 
 
 ### 0.4.2 onnx-mlir build
 
-  git clone --recursive https://github.com/onnx/onnx-mlir.git
-  cd onnx-mlir
-  git checkout tags/v0.4.1.2
-  git submodule init && git submodule update --recursive
-  cd ..
-  sh onnxmlir-build.sh
+> > git clone --recursive https://github.com/onnx/onnx-mlir.git
+> > cd onnx-mlir
+> > git checkout tags/v0.4.1.2
+> > git submodule init && git submodule update --recursive
+> > cd ..
+> > sh onnxmlir-build.sh
 

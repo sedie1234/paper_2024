@@ -17,11 +17,13 @@
 > python명령어의 기본 경로를 python3.8(python3.10)으로 바꿔줄 것, python2버전으로 되어있는 경우 오류 발생<br/>
 
 ## 0.2 Install check
-cmake --version<br/>
-protoc --version<br/>
-pip show ninja<br/>
-pip show torch<br/>
-pip show torchvision<br/>
+```
+$ cmake --version
+$ protoc --version
+$ pip show ninja
+$ pip show torch
+$ pip show torchvision
+```
 
 ## 0.3 install
 

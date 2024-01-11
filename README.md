@@ -76,3 +76,19 @@ $ ./onnx-mlir -O3 -EmitLib mnist.onnx
 $ cp ../../build/Debug/lib/*.so .
 $ python3 mnist-runPyRuntime.py
 ```
+
+## 1.3 yolov8n test
+1. shared library와 onnx-mlir을 복사해 옴
+2. yolov8n.so 파일 생성
+3. util/_yolo.py에서 control_session을 수정하여 실행
+control_session == 1 이면 onnxruntime으로 실행
+control_session == 0 이면 onnx-mlir로 실행
+```
+$ cp onnx-mlir/build/Debug/lib/*.so myexperiments/yolov8n/
+$ cp onnx-mlir/build/Debug/bin/onnx-mlir myexperiments/yolov8n/
+$ cd myexperiments/yolov8n
+$ ./onnx-mlir --EmitLib --O3 yolov8n.onnx
+$ vi util/_yolo.py
+contorl_session을 수정
+$ python3 image-yolo.py
+```

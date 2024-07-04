@@ -54,9 +54,9 @@ $ sudo cp *.so *.a /usr/local/lib/
 
 ## 0.5 issue
 ### 0.5.1 memory 부족 이슈
-> 메모리가 부족하여 빌드 실패되는 경우
-> 현재 확인된 것은 최대 64 + 40 GB 메모리를 필요로 함
-> 스왑메모리를 할당하여 해결
+> 메모리가 부족하여 빌드 실패되는 경우<br/>
+> 현재 확인된 것은 최대 64 + 40 GB 메모리를 필요로 함<br/>
+> 스왑메모리를 할당하여 해결<br/>
 #### swap memory allocation
 ```
 $ sudo fallocate -l 50G /swapfile_

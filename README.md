@@ -52,6 +52,29 @@ $ cd onnx-mlir/build/Debug/lib
 $ sudo cp *.so *.a /usr/local/lib/
 ```
 
+## 0.5 issue
+### 0.5.1 memory 부족 이슈
+> 메모리가 부족하여 빌드 실패되는 경우
+> 현재 확인된 것은 최대 64 + 40 GB 메모리를 필요로 함
+> 스왑메모리를 할당하여 해결
+#### swap memory allocation
+```
+$ sudo fallocate -l 50G /swapfile_
+$ sudo chmod 600 /swapfile_
+$ sudo mkswap /swapfile_
+$ sudo swapon /swapfile_
+```
+#### swap memory check
+```
+$ sudo swapon --show
+$ watch -n 3 swapon --show
+```
+#### swap memory off
+```
+$ sudo swapoff /swapfile_
+$ sudo rm /swapfile_
+```
+
 # 1. Test
 
 ## 1.1 add.onnx test(논문에 소개된 내용)

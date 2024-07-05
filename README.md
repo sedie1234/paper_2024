@@ -115,3 +115,15 @@ $ vi util/_yolo.py
 contorl_session을 수정
 $ python3 image-yolo.py
 ```
+
+# 2. Accelerator 추가
+
+## 2.1 TA : Test Accelerator
+1. 0.4.2에서 clone checkout submodule 뒤로 이어짐
+2. TA코드를 Accelerator에 추가
+3. onnxmlir-build.sh에 Accelerator 설정 추가 : onnxmlir-build-withTA.sh 참고
+```
+$ cp -r TA onnx-mlir/src/Accelerator/
+$ sh onnxmlir-build-withTA.sh
+```
+

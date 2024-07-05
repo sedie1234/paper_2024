@@ -116,6 +116,18 @@ contorl_session을 수정
 $ python3 image-yolo.py
 ```
 
+## 1.4 TA (Test Accelerator) test
+1. shared library와 onnx-mlir을 복사해 옴
+2. 아래 명령어를 실행하여 test.Add가 포함된 mlir 생성
+3. EmitONNXIR과 EmitTestIR을 비교
+```
+$ cp ./onnx-mlir/build/Debug/bin/onnx-mlir* ./myexperiments/TATest/
+$ cp ./onnx-mlir/build/Debug/lib/*.so ./myexperiments/TATest
+$ cd ./myexperiments/TATest
+$ ./onnx-mlir --EmitONNXIR --maccel=TA add.onnx
+$ ./onnx-mlir --EmitTestIR --maccel=TA add.onnx
+```
+
 # 2. Accelerator 추가
 
 ## 2.1 TA : Test Accelerator

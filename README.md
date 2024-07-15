@@ -26,7 +26,12 @@ $ make
 $ sudo make install
 ```
 ```
-$ pip install protobuf==3.20.3
+$ curl -OL https://github.com/protocolbuffers/protobuf/releases/tag/v3.20.3/protoc-3.20.3-linux-x86_64.zip
+$ unzip protoc-3.20.3-linux-x86_64.zip
+$ sudo mv bin/* /usr/local/bin/
+$ sudo mv include/* /usr/local/include/
+```
+```
 $ pip install ninja
 $ pip insatll torch==2.1.0
 $ pip install torchvision

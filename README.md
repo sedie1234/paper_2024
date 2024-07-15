@@ -15,6 +15,8 @@
 > torchvision 설치 (pip로 설치, 0.16.0버전 확인)<br/>
 > numpy 등은 필요에 따라 설치<br/>
 > python명령어의 기본 경로를 python3.8(python3.10)으로 바꿔줄 것, python2버전으로 되어있는 경우 오류 발생<br/>
+
+## 0.2 install
 ```
 $ wget https://github.com/Kitware/CMake/releases/download/v3.27.7/cmake-3.27.7.tar.gz
 $ tar -zxvf cmake-3.27.7.tar.gz & cd cmake-3.27.7
@@ -24,13 +26,14 @@ $ make
 $ sudo make install
 ```
 ```
+$ pip install protobuf==3.20.3
 $ pip install ninja
 $ pip insatll torch==2.1.0
 $ pip install torchvision
 $ sudo apt install python-is-python3 -y
 ```
 
-## 0.2 Install check
+## 0.3 Install check
 ```
 $ cmake --version
 $ protoc --version
@@ -38,8 +41,6 @@ $ pip show ninja
 $ pip show torch
 $ pip show torchvision
 ```
-
-## 0.3 install
 
 ### 0.3.1 ninja
 1. [ninja releases](https://github.com/ninja-build/ninja/releases)에서 파일을 받아 압축해제

@@ -15,6 +15,12 @@
 > torchvision 설치 (pip로 설치, 0.16.0버전 확인)<br/>
 > numpy 등은 필요에 따라 설치<br/>
 > python명령어의 기본 경로를 python3.8(python3.10)으로 바꿔줄 것, python2버전으로 되어있는 경우 오류 발생<br/>
+```
+$ pip install ninja
+$ pip insatll torch==2.1.0
+$ pip install torchvision
+$ sudo apt install python-is-python3 -y
+```
 
 ## 0.2 Install check
 ```

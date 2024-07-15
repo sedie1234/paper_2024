@@ -16,6 +16,14 @@
 > numpy 등은 필요에 따라 설치<br/>
 > python명령어의 기본 경로를 python3.8(python3.10)으로 바꿔줄 것, python2버전으로 되어있는 경우 오류 발생<br/>
 ```
+$ wget https://github.com/Kitware/CMake/releases/download/v3.27.7/cmake-3.27.7.tar.gz
+$ tar -zxvf cmake-3.27.7.tar.gz & cd cmake-3.27.7
+$ sudo apt install libssl-dev
+$ ./bootstrap
+$ make
+$ sudo make install
+```
+```
 $ pip install ninja
 $ pip insatll torch==2.1.0
 $ pip install torchvision

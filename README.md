@@ -32,7 +32,12 @@ $ sudo mv bin/* /usr/local/bin/
 $ sudo mv include/* /usr/local/include/
 ```
 ```
-$ pip install ninja
+$ pip install ninja==1.11.1
+$ wget https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-linux.zip
+$ unzip ninja-linux.zip
+sudo cp ninja /usr/bin
+```
+```
 $ pip insatll torch==2.1.0
 $ pip install torchvision
 $ sudo apt install python-is-python3 -y
@@ -46,10 +51,6 @@ $ pip show ninja
 $ pip show torch
 $ pip show torchvision
 ```
-
-### 0.3.1 ninja
-1. [ninja releases](https://github.com/ninja-build/ninja/releases)에서 파일을 받아 압축해제
-2. sudo cp ninja /usr/bin
 
 ## 0.4 build
 ### 0.4.1 llvm build

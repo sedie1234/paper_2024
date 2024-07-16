@@ -26,10 +26,17 @@ $ make
 $ sudo make install
 ```
 ```
-$ curl -OL https://github.com/protocolbuffers/protobuf/releases/tag/v3.20.3/protoc-3.20.3-linux-x86_64.zip
-$ unzip protoc-3.20.3-linux-x86_64.zip
-$ sudo mv bin/* /usr/local/bin/
-$ sudo mv include/* /usr/local/include/
+$ wget https://github.com/protocolbuffers/protobuf/releases/download/v3.20.3/protobuf-cpp-3.20.3.tar.gz
+$ tar -xzf protobuf-cpp-3.20.3.tar.gz
+$ cd protobuf-3.20.3
+$ ./autogen.sh
+$ ./configure
+$ make
+$ sudo make install
+$ sudo ldconfig
+$ export Porotobuf_INCLUDE_DIR=/usr/local/include
+$ export Protobuf_LIBRARIES=/usr/local/lib/libprotobuf.so
+$ export PATH=$PATH:/usr/local/bin
 ```
 ```
 $ pip install ninja==1.11.1

@@ -5,11 +5,15 @@ add_onnx_mlir_library(OMONNXToTest
 
     DEPENDS
     OMONNXONNXToTestIncGen
+    MLIRArithToLLVM
+    MLIRTransforms
 
     LINK_LIBS PUBLIC
     OMONNXOps
     OMONNXToKrnl
     OMTestOps
+    MLIRArithToLLVM
+    TARuntime
 
     ACCEL_INCLUDE_DIRS PRIVATE
     ${TA_INCLUDE_PATH}
@@ -27,8 +31,8 @@ add_onnx_mlir_library(OMRewriteONNXForTest
     OMONNXOps
     OMONNXToKrnl
     OMTestOps
+    TARuntime
 
     ACCEL_INCLUDE_DIRS PRIVATE
     ${TA_INCLUDE_PATH}
 )
-

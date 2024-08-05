@@ -1,6 +1,7 @@
-// #include "src/Accelerators/TA/Dialect/Test/TestOps/ShapeHelper.hpp"
-
+// #include "llvm/Support/Debug.h"
 #include "src/Accelerators/TA/Dialect/Test/TestOps/ShapeHelper.hpp"
+
+// #define DEBUG_TYPE "my-debug"
 
 using namespace mlir;
 using namespace onnx_mlir;

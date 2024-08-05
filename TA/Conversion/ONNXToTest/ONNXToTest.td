@@ -1,7 +1,9 @@
 #ifndef ONNX_TO_TEST
 #define ONNX_TO_TEST
 
+
 #ifndef OP_BASE
+
 include "src/Dialect/ONNX/ONNX.td"
 include "src/Accelerators/TA/Dialect/Test/Test.td"
 #endif // OP_BASE
@@ -74,7 +76,12 @@ class EmitOp4<string s> :
 
 def ReplaceONNXAddPattern : Pat<
     (ONNXAddOp $a, $b),
-    (TestAddOp $a, $b)
+    (TestAddOp $b, $a)
 >;
+
+// def ReplaceONNXAddPattern : Pat<
+//   (ONNXAddOp $a, $b),
+//   (TestAddOp $a, (TestAddOp $b, $a))
+// >;
 
 #endif // ONNX_TO_TEST

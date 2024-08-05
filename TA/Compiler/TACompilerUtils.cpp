@@ -8,6 +8,8 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Pass/PassRegistry.h"
 #include "mlir/Transforms/Passes.h"
+// #include "mlir/Dialect/Bufferization/Transforms/Bufferize.h"
+
 #include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/MC/TargetRegistry.h"
@@ -31,6 +33,7 @@ using namespace onnx_mlir;
 namespace onnx_mlir {
 
 void addONNXToTestPasses(mlir::PassManager &pm, ArrayRef<std::string> execNodesOnCpu){
+
     for (unsigned i=0; i<3; i++){
         pm.addPass(onnx_mlir::createRewriteONNXForTestPass(execNodesOnCpu));
         pm.addPass(onnx_mlir::createSimplifyShapeRelatedOpsPass());
@@ -60,6 +63,7 @@ void addONNXToTestPasses(mlir::PassManager &pm, ArrayRef<std::string> execNodesO
 
     pm.addPass(mlir::createCSEPass());
 
+    // pm.addPass(mlir::createConvertArithToLLVMPass());
 
 
 }

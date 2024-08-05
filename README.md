@@ -77,7 +77,7 @@ $ git submodule init && git submodule update --recursive
 $ cd ..
 $ sh onnxmlir-build.sh
 $ cd onnx-mlir/build/Debug/lib
-$ sudo cp *.so *.a /usr/local/lib/
+$ sudo cp libcruntime.a /usr/local/lib/
 ```
 
 ## 0.5 issue
@@ -145,15 +145,22 @@ $ python3 image-yolo.py
 ```
 
 ## 1.4 TA (Test Accelerator) test
+0. ONNXToTest.cpp 0번줄 #define TESTNUM을 3으로 함 (1,2도 가능하지만, EmitTestIR까지만 가능함)
 1. shared library와 onnx-mlir을 복사해 옴
 2. 아래 명령어를 실행하여 test.Add가 포함된 mlir 생성
-3. EmitONNXIR과 EmitTestIR을 비교
+3. EmitONNXIR ~ EmitLib까지 5단계 lowering 비교
 ```
 $ cp ./onnx-mlir/build/Debug/bin/onnx-mlir* ./myexperiments/TATest/
 $ cp ./onnx-mlir/build/Debug/lib/*.so ./myexperiments/TATest
+$ sudo cp ./onnx-mlir/build/Debug/lib/libcruntime.a /usr/local/lib/
+$ sudo cp ./onnx-mlir/build/Debug/lib/libTARuntime.a /usr/local/lib/
 $ cd ./myexperiments/TATest
-$ ./onnx-mlir --EmitONNXIR --maccel=TA add.onnx
-$ ./onnx-mlir --EmitTestIR --maccel=TA add.onnx
+$ ./onnx-mlir --EmitONNXIR --maccel=TA -lTARuntime add.onnx
+$ ./onnx-mlir --EmitTestIR --maccel=TA -lTARuntime add.onnx
+$ ./onnx-mlir --EmitMLIR --maccel=TA -lTARuntime add.onnx
+$ ./onnx-mlir --EmitTestIR --maccel=TA -lTARuntime add.onnx
+$ ./onnx-mlir --EmitLib --maccel=TA -lTARuntime add.onnx
+$ python3 run.py
 ```
 
 # 2. Accelerator 추가
@@ -165,5 +172,8 @@ $ ./onnx-mlir --EmitTestIR --maccel=TA add.onnx
 ```
 $ cp -r TA onnx-mlir/src/Accelerator/
 $ sh onnxmlir-build-withTA.sh
+$ cd onnx-mlir/build/Debug/lib
+$ sudo cp libcruntime.a /usr/local/lib/
+$ sudo cp TARuntime.a /usr/local/lib/
 ```
 

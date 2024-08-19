@@ -61,8 +61,8 @@ def RefineConvOp : Refine_Op<"Conv", [Pure,
                          TensorOf<[F32]>:$bias,
                          I64ArrayAttr:$kernel_shape,
                          I64ArrayAttr:$padding,
-                         I64ArrayAttr:$strides
-                         );
+                         I64ArrayAttr:$strides,
+                         StrAttr:$ID);
 
     let results = (outs TensorOf<[F32]>:$output);
 
@@ -72,7 +72,9 @@ def RefineConvOp : Refine_Op<"Conv", [Pure,
                        "::mlir::Value":$bias,
                        "::mlir::ArrayAttr":$kernel_shape,
                        "::mlir::ArrayAttr":$padding,
-                       "::mlir::ArrayAttr":$strides)>];
+                       "::mlir::ArrayAttr":$strides,
+                       "::mlir::StringAttr":$ID)>
+    ];
     let hasCanonicalizer = 1;
 }
 
@@ -84,10 +86,12 @@ def RefineSigmoidOp : Refine_Op<"Sigmoid", [Pure,
     let description = [{
         Refine Sigmoid operation (Activation)
     }];
-    let arguments = (ins TensorOf<[F32]>:$input);
+    let arguments = (ins TensorOf<[F32]>:$input,
+                         StrAttr:$ID);
     let results = (outs TensorOf<[F32]>:$output);
     let builders = [
-        OpBuilder<(ins "::mlir::Value":$input)>
+        OpBuilder<(ins "::mlir::Value":$input,
+                       "::mlir::StringAttr":$ID)>
     ];
     let hasCanonicalizer = 1;
 }
@@ -101,10 +105,15 @@ def RefineMulOp : Refine_Op<"Mul", [Pure,
         Refine Mul operation
     }];
     let arguments = (ins TensorOf<[F32]>:$X,
-                         TensorOf<[F32]>:$Y);
+                         TensorOf<[F32]>:$Y,
+                         StrAttr:$ID);
     let results = (outs TensorOf<[F32]>:$output);
+    let builders = [
+        OpBuilder<(ins "::mlir::Value":$X,
+                       "::mlir::Value":$Y,
+                       "::mlir::StringAttr":$ID)>
+    ];
     let hasCanonicalizer = 1;
 }
-
 
 #endif // REFINE_TD

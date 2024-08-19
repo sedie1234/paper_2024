@@ -1,2 +1,2 @@
 add_subdirectory(Refine)
-# add_subdirectory(Core)
+add_subdirectory(Core)

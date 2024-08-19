@@ -81,7 +81,39 @@ void addRefineToCorePasses(mlir::PassManager &pm, ArrayRef<std::string> execNode
         pm.addNestedPass<func::FuncOp>(
             onnx_mlir::createInstrumentPass(instrumentOps, instrumentActions));
 
-    // pm.addPass(onnx_mlir::createRefineToCorePass(execNodesOnCpu));
+    pm.addPass(onnx_mlir::createRefineToCorePass(execNodesOnCpu));
+    pm.addNestedPass<func::FuncOp>(onnx_mlir::createShapeInferencePass());
+    pm.addNestedPass<func::FuncOp>(onnx_mlir::createDecomposeONNXToONNXPass());
+    pm.addNestedPass<func::FuncOp>(onnx_mlir::createConstPropONNXToONNXPass());
+    pm.addPass(mlir::createCanonicalizerPass());  
+
+    pm.addNestedPass<func::FuncOp>(onnx_mlir::createShapeInferencePass());
+    pm.addPass(mlir::createCanonicalizerPass());
+
+    pm.addPass(createScrubDisposablePass());
+
+    pm.addPass(mlir::createCSEPass());
+
+}
+
+void addCoreToMLIRPasses(mlir::PassManager &pm, ArrayRef<std::string> execNodesOnCpu){
+
+    for(unsigned i=0; i<3; i++){
+        pm.addPass(onnx_mlir::createSimplifyShapeRelatedOpsPass());
+    }
+
+    unsigned instrumentActions = instrumentControlBits;
+    if (profileIR == onnx_mlir::ProfileIRs::Refine){
+        instrumentStage = onnx_mlir::InstrumentStages::Core;
+        instrumentOps = "onnx.*, refine.*, core.*";
+        instrumentActions |= (1 << 3) - 1;
+    }
+
+    if (instrumentStage == onnx_mlir::InstrumentStages::Onnx)
+        pm.addNestedPass<func::FuncOp>(
+            onnx_mlir::createInstrumentPass(instrumentOps, instrumentActions));
+
+    pm.addPass(onnx_mlir::createCoreToMLIRPass(execNodesOnCpu));
     pm.addNestedPass<func::FuncOp>(onnx_mlir::createShapeInferencePass());
     pm.addNestedPass<func::FuncOp>(onnx_mlir::createDecomposeONNXToONNXPass());
     pm.addNestedPass<func::FuncOp>(onnx_mlir::createConstPropONNXToONNXPass());
@@ -110,6 +142,8 @@ void addPassesPA(mlir::OwningOpRef<mlir::ModuleOp> &module,
         
         if(paEmissionTarget >= EmitCoreIR)
             addRefineToCorePasses(pm, execNodesOnCpu);
+        
+        addCoreToMLIRPasses(pm, execNodesOnCpu);
 
         if(paEmissionTarget >= EmitRefineIR || paEmissionTarget >= EmitCoreIR){
             emissionTarget = EmitMLIR;

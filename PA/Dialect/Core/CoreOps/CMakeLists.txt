@@ -1,0 +1,5 @@
+add_subdirectory(Alloc)
+add_subdirectory(Read)
+add_subdirectory(Start)
+add_subdirectory(Wait)
+add_subdirectory(Write)

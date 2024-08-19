@@ -5,6 +5,7 @@
 
 #include "src/Accelerators/PA/Compiler/PACompilerUtils.hpp"
 #include "src/Accelerators/PA/Dialect/Refine/RefineOps.hpp"
+#include "src/Accelerators/PA/Dialect/Core/CoreOps.hpp"
 #include "src/Accelerators/PA/PAAccelerator.hpp"
 #include "src/Accelerators/PA/Pass/PAPasses.hpp"
 #include "src/Compiler/CompilerOptions.hpp"
@@ -43,11 +44,20 @@ void PAAccelerator::addPasses(mlir::OwningOpRef<mlir::ModuleOp> &module,
 
 void PAAccelerator::registerDialects(mlir::DialectRegistry &registry) const {
     registry.insert<refine::RefineDialect>();
+	registry.insert<core::CoreDialect>();
 }
 
 void PAAccelerator::registerPasses(int optLevel) const {
     mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
         return onnx_mlir::createONNXToRefinePass();
+    });
+
+    mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+        return onnx_mlir::createRefineToCorePass();
+    });
+    
+    mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+        return onnx_mlir::createCoreToMLIRPass();
     });
 }
 
@@ -56,6 +66,7 @@ void PAAccelerator::conversionTargetONNXToKrnl(
     mlir::ConversionTarget &target) const {
     
     target.addLegalDialect<refine::RefineDialect>();
+    target.addLegalDialect<core::CoreDialect>();
 }
 
 mlir::MemRefType PAAccelerator::convertTensorTypeToMemRefType(

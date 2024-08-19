@@ -14,7 +14,7 @@ add_subdirectory(Dialect)
 add_subdirectory(Conversion)
 # add_subdirectory(Pass)
 add_subdirectory(Compiler)
-# add_subdirectory(Runtime)
+add_subdirectory(Runtime)
 
 
 add_onnx_mlir_library(OMPAAccel
@@ -35,6 +35,7 @@ add_onnx_mlir_library(OMPAAccel
   OMPACompilerUtils
   OMAccelerator
   OMRefineOps
-  
+  OMCoreOps
+  PARuntime  
   
 )

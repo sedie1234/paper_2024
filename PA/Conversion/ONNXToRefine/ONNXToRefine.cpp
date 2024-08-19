@@ -40,7 +40,7 @@ struct ONNXToRefineLoweringPass
 
     StringRef getArgument() const override {return "convert-onnx-to-refine";}
     StringRef getDescription() const override {
-        return "Lower ONNX ops to Test ops";
+        return "Lower ONNX ops to Refine ops";
     }
 
     ONNXToRefineLoweringPass() = default;
@@ -77,6 +77,7 @@ public:
         auto kernel_shapeAttr = op->getAttr("kernel_shape");
         auto padsAttr = op->getAttr("pads");
         auto stridesAttr = op->getAttr("strides");
+        auto onnx_node_name = op->getAttr("onnx_node_name");
 
         Value input = op.getOperand(0);
         Value kernel = op.getOperand(1);
@@ -102,7 +103,8 @@ public:
             bias,
             kernel_shapeAttr.cast<ArrayAttr>(),
             padsAttr.cast<ArrayAttr>(),
-            stridesAttr.cast<ArrayAttr>()
+            stridesAttr.cast<ArrayAttr>(),
+            onnx_node_name.cast<StringAttr>()
         );
 
         rewriter.replaceOp(op, refineConvOp);
@@ -120,8 +122,9 @@ public:
         Type resultType = op.getResult().getType();
 
         Value input = op.getOperand();
+        auto onnx_node_name = op->getAttr("onnx_node_name");
 
-        auto refineSigmoidOp = rewriter.create<refine::RefineSigmoidOp>(loc, resultType, input);
+        auto refineSigmoidOp = rewriter.create<refine::RefineSigmoidOp>(loc, resultType, input, onnx_node_name.cast<StringAttr>());
 
         rewriter.replaceOp(op, refineSigmoidOp);
 
@@ -136,11 +139,12 @@ public:
 
         auto loc = op.getLoc();
         Type resultType = op.getResult().getType();
+        auto onnx_node_name = op->getAttr("onnx_node_name");
 
         Value X = op.getOperand(0);
         Value Y = op.getOperand(1);
 
-        auto refineMulOp = rewriter.create<refine::RefineMulOp>(loc, resultType, X, Y);
+        auto refineMulOp = rewriter.create<refine::RefineMulOp>(loc, resultType, X, Y, onnx_node_name.cast<StringAttr>());
 
         rewriter.replaceOp(op, refineMulOp);
 

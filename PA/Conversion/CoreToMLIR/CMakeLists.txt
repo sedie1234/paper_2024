@@ -1,10 +1,10 @@
-add_onnx_mlir_rewriter(ONNXToRefine)
+add_onnx_mlir_rewriter(CoreToMLIR)
 
-add_onnx_mlir_library(OMONNXToRefine
-    ONNXToRefine.cpp
+add_onnx_mlir_library(OMCoreToMLIR
+    CoreToMLIR.cpp
 
     DEPENDS
-    OMONNXONNXToRefineIncGen
+    OMONNXCoreToMLIRIncGen
     MLIRArithToLLVM
     MLIRTransforms
 
@@ -12,7 +12,7 @@ add_onnx_mlir_library(OMONNXToRefine
     OMONNXOps
     OMONNXToKrnl
     OMRefineOps
-	OMCoreOps
+    OMCoreOps
     MLIRArithToLLVM
     PARuntime
 

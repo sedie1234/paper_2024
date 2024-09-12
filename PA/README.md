@@ -1,5 +1,13 @@
 # Proto Accelerator on onnx-mlir
 
+## 0. Requirements
+1) openssl 설치
+
+```
+$ sudo apt install libssl-dev
+```
+
+
 ## 1. info
 |dialect|operation|간략한 설명|
 |:---:|:---:|:---|
@@ -53,4 +61,16 @@ $ sudo cp PARuntime.a /usr/local/lib/
 ```
 
 ### model compile && inference
+1) model compile
+```
+$ ./onnx-mlir --EmitLib -maccel=PA -lPARuntime -lssl -lcrypto [onnx model]
+```
 
+2) inference (python, rough code)
+```
+from PyRuntime import OMExecutionSession
+
+session = OMExecutionSession(model_shared_lib.so)
+
+output = session.run(input)
+```

@@ -176,4 +176,10 @@ $ cd onnx-mlir/build/Debug/lib
 $ sudo cp libcruntime.a /usr/local/lib/
 $ sudo cp TARuntime.a /usr/local/lib/
 ```
+## 2.2 PA : Proto Accelerator
+1. PA코드를 accelerator에 추가
+2. 빌드
+3. shared library, onnx-mlir을 적절한 위치에 복사
+4. 모델 컴파일
+5. myaccel 실행 후, 동작
 

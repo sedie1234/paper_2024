@@ -83,6 +83,7 @@ public:
 
         rewriter.replaceOp(op, result);
 
+
         return success();
     }
 };
@@ -107,12 +108,10 @@ public:
         auto shapeAttr = op->getAttr("shape").cast<ArrayAttr>();
 
         auto ID = op->getAttr("ID");
-        auto arg = op->getAttr("arg");
 
         auto castID = ID.cast<StringAttr>();
-        auto castArg = arg.cast<IntegerAttr>();
 
-        auto argValue = rewriter.create<arith::ConstantOp>(loc, int32Type, castArg);
+        auto argValue = op.getOperand(1);
 
     
         auto zeroAttr = rewriter.getI32IntegerAttr(0);
@@ -138,6 +137,7 @@ public:
 
         int64_t size = 1;
 
+
         for(int i=0; i<shape.size(); i++){
             if(shape[i] == -1){
                 llvm::outs() << "input memref shape is dynamic\n";
@@ -145,6 +145,7 @@ public:
             }
             size *= shape[i];
         }
+
         auto sizeValue = rewriter.create<arith::ConstantOp>(loc, int32Type, rewriter.getI32IntegerAttr(size));
         
 
@@ -154,13 +155,20 @@ public:
             shapeVector.push_back(intAttr.getInt());
         }
 
+        auto shapeLength = rewriter.getIntegerAttr(rewriter.getIntegerType(64), 4);
+        //get id pointer
+        auto shapeLengthValue = rewriter.create<LLVM::ConstantOp>(loc, int32Type, shapeLength);
+        // mem alloc
+        Value shapeAlloca = rewriter.create<LLVM::AllocaOp>(loc, llvmInt64PtrType, shapeLengthValue, 0);
 
-        auto shapeMemRefType = MemRefType::get(shapeVector, rewriter.getIntegerType(64));
-        Value shapeMemRef = rewriter.create<memref::AllocOp>(loc, shapeMemRefType);
-        
-        Value shapePtr = rewriter.create<memref::ExtractAlignedPointerAsIndexOp>(loc, shapeMemRef);
-        Value shapePtrInt = rewriter.create<arith::IndexCastOp>(loc, rewriter.getIntegerType(64), shapePtr);
-        Value shapePtrCast = rewriter.create<LLVM::IntToPtrOp>(loc, LLVM::LLVMPointerType::get(rewriter.getIntegerType(64)), shapePtrInt);
+        // save the shape info
+        for (int i = 0; i < shapeVector.size(); i++) {
+            Value idxI32 = rewriter.create<arith::ConstantOp>(loc, rewriter.getI32Type(), rewriter.getI32IntegerAttr(i));
+            Value idxI64 = rewriter.create<LLVM::ConstantOp>(loc, int64Type, rewriter.getI64IntegerAttr(i));
+            Value _ptr = rewriter.create<LLVM::GEPOp>(loc, llvmInt64PtrType, shapeAlloca, ValueRange{idxI64});
+            Value shapeElement = rewriter.create<arith::ConstantOp>(loc, int64Type, rewriter.getI64IntegerAttr(shapeVector[i]));
+            rewriter.create<LLVM::StoreOp>(loc, shapeElement, _ptr);
+        }
 
         std::string idStr = castID.getValue().str();
 
@@ -186,8 +194,13 @@ public:
 
         auto symbolRefWriteToAccel = SymbolRefAttr::get(rewriter.getContext(), "writeToAccel");
         // Value output = rewriter.create<LLVM::AllocaOp>(loc, llvmF32PtrType, sizeValue);
-        rewriter.create<LLVM::CallOp>(loc, TypeRange{}, symbolRefWriteToAccel, 
-            ValueRange{ ptr, sizeValue, strAlloca, argValue, shapePtrCast});
+    
+        auto result = rewriter.create<LLVM::CallOp>(loc, int32Type, symbolRefWriteToAccel, 
+            ValueRange{ ptr, sizeValue, strAlloca, argValue, shapeAlloca/*shapePtrCast*/});
+
+        rewriter.replaceOp(op, result);
+
+
 
         return success();
     }
@@ -207,65 +220,52 @@ public:
         auto f32PtrType = LLVM::LLVMPointerType::get(rewriter.getF32Type());
         
         auto ID = op->getAttr("ID");
-        auto optype = op->getAttr("optype");
-        auto outsize = op->getAttr("outsize");
-        auto config0 = op->getAttr("config0");
-        auto config1 = op->getAttr("config1");
-        auto config2 = op->getAttr("config2");
-        auto arg0 = op->getAttr("arg0");
-        auto arg1 = op->getAttr("arg1");
-        auto arg2 = op->getAttr("arg2");
-        auto arg3 = op->getAttr("arg3");
-        auto arg4 = op->getAttr("arg4");
-        auto arg5 = op->getAttr("arg5");
-        auto arg6 = op->getAttr("arg6");
-        auto arg7 = op->getAttr("arg7");
-        auto arg8 = op->getAttr("arg8");
+        
 
         auto castID = ID.cast<StringAttr>();
-        auto castOpType = optype.cast<IntegerAttr>();
-        auto castOutsize = outsize.cast<IntegerAttr>();
-        auto castConfig0 = config0.cast<IntegerAttr>();
-        auto castConfig1 = config1.cast<IntegerAttr>();
-        auto castConfig2 = config2.cast<IntegerAttr>();
-        auto castArg0 = arg0.cast<IntegerAttr>();
-        auto castArg1 = arg1.cast<IntegerAttr>();
-        auto castArg2 = arg2.cast<IntegerAttr>();
-        auto castArg3 = arg3.cast<IntegerAttr>();
-        auto castArg4 = arg4.cast<IntegerAttr>();
-        auto castArg5 = arg5.cast<IntegerAttr>();
-        auto castArg6 = arg6.cast<IntegerAttr>();
-        auto castArg7 = arg7.cast<IntegerAttr>();
-        auto castArg8 = arg8.cast<IntegerAttr>();
 
-        auto opTypeValue = rewriter.create<arith::ConstantOp>(loc, int32Type, castOpType);
-        auto outsizeValue = rewriter.create<arith::ConstantOp>(loc, int32Type, castOutsize);
-        auto config0Value = rewriter.create<arith::ConstantOp>(loc, int32Type, castConfig0);
-        auto config1Value = rewriter.create<arith::ConstantOp>(loc, int32Type, castConfig1);
-        auto config2Value = rewriter.create<arith::ConstantOp>(loc, int32Type, castConfig2);
-        auto arg0Value = rewriter.create<arith::ConstantOp>(loc, int32Type, castArg0);
-        auto arg1Value = rewriter.create<arith::ConstantOp>(loc, int32Type, castArg1);
-        auto arg2Value = rewriter.create<arith::ConstantOp>(loc, int32Type, castArg2);
-        auto arg3Value = rewriter.create<arith::ConstantOp>(loc, int32Type, castArg3);
-        auto arg4Value = rewriter.create<arith::ConstantOp>(loc, int32Type, castArg4);
-        auto arg5Value = rewriter.create<arith::ConstantOp>(loc, int32Type, castArg5);
-        auto arg6Value = rewriter.create<arith::ConstantOp>(loc, int32Type, castArg6);
-        auto arg7Value = rewriter.create<arith::ConstantOp>(loc, int32Type, castArg7);
-        auto arg8Value = rewriter.create<arith::ConstantOp>(loc, int32Type, castArg8);
+
+        auto opTypeValue = op->getOperand(0);
+        auto outsizeValue = op->getOperand(1);
+        auto config0Value = op->getOperand(2);
+        auto config1Value = op->getOperand(3);
+        auto config2Value = op->getOperand(4);
+        auto arg0Value = op->getOperand(5);
+        auto arg1Value = op->getOperand(6);
+        auto arg2Value = op->getOperand(7);
+        auto arg3Value = op->getOperand(8);
+        auto arg4Value = op->getOperand(9);
+        auto arg5Value = op->getOperand(10);
+        auto arg6Value = op->getOperand(11);
+        auto arg7Value = op->getOperand(12);
+        auto arg8Value = op->getOperand(13);
+        auto chainValue = op->getOperand(14);
 
 
         std::string idStr = castID.getValue().str();
 
         auto strLength = rewriter.getIntegerAttr(rewriter.getIntegerType(32), idStr.size() + 1);
         auto strLengthValue = rewriter.create<LLVM::ConstantOp>(loc, int32Type, strLength);
-        // auto alignmentValue = rewriter.create<LLVM::ConstantOp>(loc, int32Type, rewriter.getI32IntegerAttr(0));
         auto strAlloca = rewriter.create<LLVM::AllocaOp>(loc, i8PtrType, strLengthValue, 0);
 
+        for(size_t i=0; i<idStr.size(); i++){
+            auto charValue = rewriter.getI8IntegerAttr(idStr[i]);
+            auto indexValue = rewriter.create<LLVM::ConstantOp>(loc, int32Type, rewriter.getI32IntegerAttr(i));
+            auto charPtr = rewriter.create<LLVM::GEPOp>(loc, i8PtrType, strAlloca, ValueRange{indexValue});
+            rewriter.create<LLVM::StoreOp>(loc, rewriter.create<LLVM::ConstantOp>(loc, rewriter.getIntegerType(8), charValue), charPtr);
+        }
+
+        // null terminator
+        auto nullTerminatorIndex = rewriter.create<LLVM::ConstantOp>(loc, rewriter.getIntegerType(32), rewriter.getI32IntegerAttr(idStr.size()));
+        auto nullTerminatorPtr = rewriter.create<LLVM::GEPOp>(loc, i8PtrType, strAlloca, ValueRange{nullTerminatorIndex});
+        rewriter.create<LLVM::StoreOp>(loc, rewriter.create<LLVM::ConstantOp>(loc, rewriter.getIntegerType(8), rewriter.getI8IntegerAttr(0)), nullTerminatorPtr);
+
+
         auto symbolRefPushInst = SymbolRefAttr::get(rewriter.getContext(), "pushInst");
-        // Value output = rewriter.create<LLVM::AllocaOp>(loc, f32PtrType, outsizeValue);
-        rewriter.create<LLVM::CallOp>(loc, TypeRange{}, symbolRefPushInst, ValueRange{//output,
-                                                                                        strAlloca,
+        
+        auto result = rewriter.create<LLVM::CallOp>(loc, int32Type, symbolRefPushInst, ValueRange{//output,
                                                                                         opTypeValue,
+                                                                                        strAlloca,
                                                                                        outsizeValue,
                                                                                        config0Value,
                                                                                        config1Value,
@@ -278,9 +278,12 @@ public:
                                                                                        arg5Value,
                                                                                        arg6Value,
                                                                                        arg7Value,
-                                                                                       arg8Value
+                                                                                       arg8Value,
+                                                                                       chainValue
                                                                                        });
-        rewriter.eraseOp(op);
+        
+        rewriter.replaceOp(op, result);
+
         return success();
     }
 };
@@ -301,10 +304,13 @@ public:
         auto ID = op->getAttr("ID");
         auto castID = ID.cast<StringAttr>();
 
+
+        auto chain = op->getOperand(0);
+
         std::string idStr = castID.getValue().str();
 
         auto strLength = rewriter.getIntegerAttr(rewriter.getIntegerType(32), idStr.size() + 1);
-
+ 
         //get id pointer
         auto strLengthValue = rewriter.create<LLVM::ConstantOp>(loc, int32Type, strLength);
         // auto alignmentValue = rewriter.create<LLVM::ConstantOp>(loc, int32Type, rewriter.getI32IntegerAttr(0));
@@ -324,9 +330,13 @@ public:
 
         auto symbolRefWaitInst = SymbolRefAttr::get(rewriter.getContext(), "waitInst");
         // Value output = rewriter.create<LLVM::AllocaOp>(loc, f32PtrType, size);
-        rewriter.create<LLVM::CallOp>(loc, TypeRange{}, symbolRefWaitInst, ValueRange{strAlloca});
+        
+        auto result = rewriter.create<LLVM::CallOp>(loc, int32Type, symbolRefWaitInst, ValueRange{strAlloca, chain});
+        
+        
+        rewriter.replaceOp(op, result);
 
-        rewriter.eraseOp(op);
+
 
         return success();
     }
@@ -345,37 +355,45 @@ public:
         auto f32Type = rewriter.getF32Type();
         auto f32PtrType = LLVM::LLVMPointerType::get(rewriter.getF32Type());
 
-        // Value size = op.getOperand(0);
-        auto sizeAttr = op->getAttr("size").cast<mlir::IntegerAttr>();
-        auto sizeValue = rewriter.create<arith::ConstantOp>(loc, int32Type, sizeAttr);
+        auto sizeValue = op->getOperand(0);
+        auto argValue = op->getOperand(1);
+        auto chain = op->getOperand(2);
 
         auto ID = op->getAttr("ID");
-        auto arg = op->getAttr("arg");
         auto outShape = op->getAttr("shape");
 
+
         auto castID = ID.cast<StringAttr>();
-        auto castArg = arg.cast<IntegerAttr>();
         auto castOutShape = outShape.cast<ArrayAttr>();
-        
-        auto argValue = rewriter.create<arith::ConstantOp>(loc, int32Type, castArg);
+    
 
         std::string idStr = castID.getValue().str();
 
         auto strLength = rewriter.getIntegerAttr(rewriter.getIntegerType(32), idStr.size() + 1);
 
-
-        llvm::SmallVector<int64_t, 1> shape;
-        for(auto dim : castOutShape){
-            shape.push_back(dim.cast<IntegerAttr>().getInt());
-        }
+        auto result = op.getResult();
+        auto resultType = result.getType().dyn_cast<mlir::RankedTensorType>();
+        
+        llvm::ArrayRef<int64_t> result_shape = resultType.getShape();
 
         int64_t totalsize = 1;
-        for(int dim : shape){
+        for(int dim : result_shape){
             totalsize *= dim;
         }
+        
+
+        llvm::outs() << "CoreReadOp : " << castID << "\n";
+        llvm::outs() << "tatalsize : sizeValue = ";
+        for(int dim : result_shape){
+            llvm::outs() << dim << ", ";
+        }
+        llvm::outs() << totalsize << " \n";
+        sizeValue.dump();
+        llvm::outs() << " \n";
 
         auto elementType = rewriter.getF32Type();
-        auto memrefType = MemRefType::get(shape, elementType);
+        // auto memrefType = MemRefType::get(shape, elementType);
+        auto memrefType = MemRefType::get(result_shape, elementType);
         
         //get return memory ptr
         Value returnMem = rewriter.create<memref::AllocOp>(loc, memrefType);
@@ -400,18 +418,18 @@ public:
         auto nullTerminatorPtr = rewriter.create<LLVM::GEPOp>(loc, i8PtrType, strAlloca, ValueRange{nullTerminatorIndex});
         rewriter.create<LLVM::StoreOp>(loc, rewriter.create<LLVM::ConstantOp>(loc, rewriter.getIntegerType(8), rewriter.getI8IntegerAttr(0)), nullTerminatorPtr);
 
-
         auto symbolRefReadFromAccel = SymbolRefAttr::get(rewriter.getContext(), "readFromAccel");
-// Value output = rewriter.create<LLVM::AllocaOp>(loc, f32PtrType, sizeValue);
+
         rewriter.create<LLVM::CallOp>(loc, TypeRange{}, symbolRefReadFromAccel, ValueRange{//output,
                                                                                            returnPtr,
                                                                                            sizeValue,
                                                                                            strAlloca, 
-                                                                                           argValue});
-        auto tensorType = RankedTensorType::get(shape, elementType);
-        Value returnTensor = rewriter.create<UnrealizedConversionCastOp>(loc, tensorType, returnMem).getResult(0);
+                                                                                           argValue,
+                                                                                           chain});
 
-        rewriter.create<memref::DeallocOp>(loc, returnMem);
+        Value returnTensor = rewriter.create<UnrealizedConversionCastOp>(loc, resultType, returnMem).getResult(0);
+
+        // rewriter.create<memref::DeallocOp>(loc, returnMem);
 
         rewriter.replaceOp(op, returnTensor);
 
@@ -461,7 +479,7 @@ void declareExternalFunction(mlir::ModuleOp module, mlir::OpBuilder &builder){
 
 //writeToAccel
     auto writeToAccelFuncType = LLVM::LLVMFunctionType::get(
-        voidType,
+        int32Type,
         llvm::ArrayRef<mlir::Type>{f32PtrType, int32Type, charPtrType, int32Type, int64PtrType},
         false
     );
@@ -474,7 +492,7 @@ void declareExternalFunction(mlir::ModuleOp module, mlir::OpBuilder &builder){
 //readFromAccel
     auto readFromAccelFuncType = LLVM::LLVMFunctionType::get(
         voidType,
-        llvm::ArrayRef<mlir::Type>{f32PtrType, int32Type, charPtrType, int32Type},
+        llvm::ArrayRef<mlir::Type>{f32PtrType, int32Type, charPtrType, int32Type, int32Type},
         false
     );
 
@@ -485,7 +503,7 @@ void declareExternalFunction(mlir::ModuleOp module, mlir::OpBuilder &builder){
 
 //pushInst
     auto pushInstFuncType = LLVM::LLVMFunctionType::get(
-        voidType,
+        int32Type,
         llvm::ArrayRef<mlir::Type>{int32Type,       //optype 
                                    charPtrType,     //instID
                                    int32Type,       //outsize
@@ -500,7 +518,8 @@ void declareExternalFunction(mlir::ModuleOp module, mlir::OpBuilder &builder){
                                    int32Type,       //arg5
                                    int32Type,       //arg6
                                    int32Type,       //arg7
-                                   int32Type},      //arg8
+                                   int32Type,       //arg8
+                                   int32Type},      //chain
         false                      
     );
 
@@ -510,7 +529,7 @@ void declareExternalFunction(mlir::ModuleOp module, mlir::OpBuilder &builder){
     }
 
 //waitInst
-    auto waitInstFuncType = LLVM::LLVMFunctionType::get(voidType, llvm::ArrayRef<mlir::Type>{charPtrType}, false);
+    auto waitInstFuncType = LLVM::LLVMFunctionType::get(int32Type, llvm::ArrayRef<mlir::Type>{charPtrType, int32Type}, false);
     if(!module.lookupSymbol<LLVM::LLVMFuncOp>("waitInst")){
         auto waitInstFunc = builder.create<LLVM::LLVMFuncOp>(loc, "waitInst", waitInstFuncType);
         module.push_back(waitInstFunc);

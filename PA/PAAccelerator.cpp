@@ -52,9 +52,9 @@ void PAAccelerator::registerPasses(int optLevel) const {
         return onnx_mlir::createONNXToRefinePass();
     });
 
-    mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
-        return onnx_mlir::createRefineToCorePass();
-    });
+    // mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
+    //     return onnx_mlir::createRefineToCorePass();
+    // });
     
     mlir::registerPass([]() -> std::unique_ptr<mlir::Pass> {
         return onnx_mlir::createCoreToMLIRPass();

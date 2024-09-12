@@ -20,9 +20,9 @@
 
 namespace onnx_mlir {
 typedef enum {
-    EmitPNONE,
-    EmitCoreIR,
     EmitRefineIR,
+    EmitCoreIR,
+    EmitPNONE,
 }PAEmissionTargetType;
 
 extern llvm::cl::OptionCategory OnnxMlirOptions;

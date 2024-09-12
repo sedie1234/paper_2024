@@ -5,12 +5,16 @@ import math
 import numpy as np
 from PIL import Image
 from PyRuntime import OMExecutionSession
+import time
 
 from . _utils import xywh2xyxy, nms, draw, sigmoid, rescale_boxes
 from . _config import get_classes
 
 
-control_session = 0 # 1: onnxruntime // 0: onnx-mlir
+control_session = 2 # 2: compare onnxruntime & onnx-mlir // 1: onnxruntime // 0: onnx-mlir
+model_split = 0
+ort_on = 1
+om_on = 1
 
 class Yolo:
     def __init__(self, data_type, app_type, conf_thres=0.3, iou_thres=0.5, input_size=640):
@@ -22,7 +26,25 @@ class Yolo:
 
         self.num_masks = 32
 
-        self.session = self.sess_init()
+        self.session = None
+        self.sessions = []
+        if control_session == 1:
+            if model_split == 0:
+                self.session = self.sess_init("yolov8n.onnx")
+            elif model_split == 1:
+                self.sessions.append(self.sess_init('./part1.onnx'))
+                self.sessions.append(self.sess_init('./part2.onnx'))
+        elif control_session == 0:
+            if model_split == 0:
+                self.session = self.sess_init('./yolov8n.so')
+            elif model_split == 1:
+                self.sessions.append(self.sess_init('./part1.so'))
+                self.sessions.append(self.sess_init('./part2.so'))
+        elif control_session == 2:
+            self.session = onnxruntime.InferenceSession('./_9_part1.onnx')
+            self.sessions.append(OMExecutionSession('./_9_part1.so'))
+                
+        
         self.input_size = input_size
 
         self.cap_width, self.cap_height = [0, 0]
@@ -30,13 +52,15 @@ class Yolo:
         self.conf_threshold = conf_thres
         self.iou_threshold = iou_thres
 
-    def sess_init(self):
+    def sess_init(self, model):
+        session = None
         if control_session:
-            model_path = 'yolov8n.onnx'
-            session = onnxruntime.InferenceSession(model_path,
+			#model_path = 'conv.onnx'
+            session = onnxruntime.InferenceSession(model,
                                             providers=['CPUExecutionProvider'])
         else:
-            session = OMExecutionSession('./yolov8n.so')
+            session = OMExecutionSession(model)
+			#session = OMExecutionSession('./conv.so')
 
         return session
 
@@ -57,13 +81,64 @@ class Yolo:
 
     def inference(self, image):
         input_tensor = self.preprocess(image)
-        if control_session:
-            output_names = [self.session.get_outputs()[i].name for i in range(len(self.session.get_outputs()))]
-            outputs = self.session.run(output_names=output_names, input_feed={self.session.get_inputs()[0].name: input_tensor})
-        else:
+        temp_out = input_tensor
+        outputs = None
+        if control_session == 1:
+            if model_split == 0:
+                output_names = [self.session.get_outputs()[i].name for i in range(len(self.session.get_outputs()))]
+                outputs = self.session.run(output_names=output_names, input_feed={self.session.get_inputs()[0].name: input_tensor})
+            elif model_split == 1:
+                for sess in self.sessions:
+                    input = temp_out
+                    if(isinstance(input, list)):
+                        input = np.array(input)
+                        input = input[0]
+                    
+                    temp_out_names= [sess.get_outputs()[i].name for i in range(len(sess.get_outputs()))]
+                    temp_out = sess.run(output_names=temp_out_names, input_feed={sess.get_inputs()[0].name: input})
+                    print('[temp_out]')
+                    print(temp_out)
+                    
+                outputs = temp_out
+        elif control_session == 0:
             print(input_tensor)
-            outputs = self.session.run(input_tensor)
-        print(outputs)
+            temp_out = input_tensor
+            if model_split == 0:
+                outputs = self.session.run(input_tensor)
+            elif model_split == 1:
+                for sess in self.sessions:
+                    input = temp_out
+                    if(isinstance(input, list)):
+                        input = np.array(input)
+                        input = input[0]
+                    temp_out = sess.run(input)
+                    
+                outputs = temp_out
+        elif control_session == 2:
+            print(input_tensor.shape)
+            print(input_tensor)
+            temp_out = input_tensor
+            if ort_on == 1:
+                output_names = [self.session.get_outputs()[i].name for i in range(len(self.session.get_outputs()))]
+                ort_output = self.session.run(output_names=output_names, input_feed={self.session.get_inputs()[0].name: input_tensor})
+                outputs = ort_output
+                np.save('ortout.npy', ort_output)
+
+
+            if om_on == 1:
+                om_output = self.sessions[0].run(input_tensor)
+                outputs = om_output
+                np.save('omout.npy', om_output)
+                
+            if om_on == 1 and ort_on == 1:
+                comparison = np.allclose(ort_output, om_output, atol=1e-6)
+                print(f"\nModel output matches expected output: {comparison}")
+                
+                print("[ort output]")
+                print(ort_output)
+                print("[om output]")
+                print(om_output)
+            
         return outputs
 
     def post_process(self, outputs):
@@ -177,6 +252,9 @@ class Yolo:
             boxes, scores, class_ids = self.post_process(outputs)
             result_img = draw(image, boxes, scores, class_ids, self.colors, None, 1, self.classes)
             return result_img
+        elif self.app_type == 'test':
+            outputs = self.inference(image)
+            return outputs
         else:
             outputs = self.inference(image)
             boxes, scores, class_ids, mask_maps = self.post_process(outputs)

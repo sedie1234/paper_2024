@@ -41,5 +41,6 @@ void CoreDialect::initialize(){
 #include "src/Accelerators/PA/Dialect/Core/CoreOps.cpp.inc"
 
 #define GET_ATTRDEF_CLASSES
+#include "src/Accelerators/PA/Dialect/Core/CoreAttributes.cpp.inc"
 
 #include "src/Accelerators/PA/Dialect/Core/CoreDialect.cpp.inc"

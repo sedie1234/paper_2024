@@ -50,8 +50,8 @@ def CoreAllocOp : Core_Op<"Alloc", [Pure,
     let description = [{
         Core Alloc operation
     }];
-    let arguments = (ins TensorOf<[F32]>:$input);
-    let results = (outs MemRefOf<[F32]>:$output);
+    let arguments = (ins TensorOf<[F32, I64]>:$input);
+    let results = (outs MemRefOf<[F32, I64]>:$output);
     let builders = [
         OpBuilder<(ins "::mlir::Value":$input)>
     ];
@@ -67,9 +67,9 @@ def CoreWriteOp : Core_Op<"Write", [Pure,
         Core Write opertaion
     }];
     let arguments = (ins MemRefOf<[F32]>:$input,
-                         ArrayAttr:$shape,
                          StrAttr:$ID,
-                         I32:$arg);
+                         I32:$arg,
+                         ArrayAttr:$shape);
     let results = (outs I32:$addr);
     let builders = [
         OpBuilder<(ins "::mlir::Value":$input,
@@ -103,9 +103,10 @@ def CoreStartOp : Core_Op<"Start", [Pure,
                       I32:$arg5,
                       I32:$arg6,
                       I32:$arg7,
-                      I32:$arg8
+                      I32:$arg8,
+                      I32:$chain
                       );
-    let results = (outs);
+    let results = (outs I32:$out);
     let builders = [
         OpBuilder<(ins "::mlir::StringAttr":$ID,
                        "::mlir::IntegerAttr":$optype,
@@ -121,7 +122,8 @@ def CoreStartOp : Core_Op<"Start", [Pure,
                        "::mlir::IntegerAttr":$arg5,
                        "::mlir::IntegerAttr":$arg6,
                        "::mlir::IntegerAttr":$arg7,
-                       "::mlir::IntegerAttr":$arg8)>
+                       "::mlir::IntegerAttr":$arg8,
+                       "::mlir::IntegerAttr":$chain)>
     ];
     let hasCanonicalizer = 1;
 }
@@ -134,10 +136,12 @@ def CoreWaitOp : Core_Op<"Wait", [Pure,
     let description = [{
         CoreWait operation
     }];
-    let arguments = (ins StrAttr:$ID);
-    let results = (outs);
+    let arguments = (ins StrAttr:$ID,
+                         I32:$chain);
+    let results = (outs I32:$out);
     let builders = [
-        OpBuilder<(ins "::mlir::StringAttr":$ID)>
+        OpBuilder<(ins "::mlir::StringAttr":$ID,
+                       "::mlir::IntegerAttr":$chain)>
     ];
     let hasCanonicalizer = 1;
 }
@@ -153,13 +157,15 @@ def CoreReadOp : Core_Op<"Read", [Pure,
     let arguments = (ins I32:$size,
                          StrAttr:$ID,
                          I32:$arg,
-                         ArrayAttr:$shape);
+                         ArrayAttr:$shape,
+                         I32:$chain);
     let results = (outs TensorOf<[F32]>:$output);
     let builders = [
         OpBuilder<(ins "::mlir::IntegerAttr":$size,
                        "::mlir::StringAttr":$ID,
                        "::mlir::IntegerAttr":$arg,
-                       "::mlir::ArrayAttr":$shape)>
+                       "::mlir::ArrayAttr":$shape,
+                       "::mlir::IntegerAttr":$chain)>
     ];
     let hasCanonicalizer = 1;
 }

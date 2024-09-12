@@ -1,4 +1,4 @@
-#include "src/Accelerators/PA/Dialect/Core/CoreOps/ShapeHelper.hpp"
+#include "src/Accelerators/PA/Dialect/Refine/RefineOps/ShapeHelper.hpp"
 
 using namespace mlir;
 using namespace onnx_mlir;

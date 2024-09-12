@@ -8,6 +8,16 @@ add_onnx_mlir_library(OMRefineOps
   RefineOps/Conv/Conv.cpp
   RefineOps/Sigmoid/Sigmoid.cpp
   RefineOps/Mul/Mul.cpp
+  RefineOps/Split/Split.cpp
+  RefineOps/Add/Add.cpp
+  RefineOps/Concat/Concat.cpp
+  RefineOps/Maxpool/Maxpool.cpp
+  RefineOps/Resize/Resize.cpp
+  RefineOps/Transpose/Transpose.cpp
+  RefineOps/Softmax/Softmax.cpp
+  RefineOps/Slice/Slice.cpp
+  RefineOps/Sub/Sub.cpp
+  RefineOps/Div/Div.cpp
 
   DEPENDS
   # OMLayoutHelper
@@ -15,8 +25,17 @@ add_onnx_mlir_library(OMRefineOps
   OMONNXRefineConvIncGen
   OMONNXRefineSigmoidIncGen
   OMONNXRefineMulIncGen
+  OMONNXRefineSplitIncGen
+  OMONNXRefineAddIncGen
+  OMONNXRefineConcatIncGen
+  OMONNXRefineMaxpoolIncGen
+  OMONNXRefineResizeIncGen
+  OMONNXRefineTransposeIncGen
+  OMONNXRefineSoftmaxIncGen
+  OMONNXRefineSliceIncGen
+  OMONNXRefineSubIncGen
+  OMONNXRefineDivIncGen
   OMShapeInferenceOpInterfaceIncGen
-  
 
   LINK_LIBS PRIVATE
   OMDiagnostic

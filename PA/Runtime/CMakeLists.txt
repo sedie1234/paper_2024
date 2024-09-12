@@ -1,5 +1,5 @@
 add_onnx_mlir_library(PARuntime STATIC
-    PARuntime.cpp
+    PARuntime.c
 
     EXCLUDE_FROM_OM_LIBS
 

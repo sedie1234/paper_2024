@@ -21,13 +21,13 @@ if __name__ == '__main__':
     frame = cv2.imread("images/test.jpg")
     result_img = yolo.main(frame)
     #cv2.imshow("Objects {}".format(opt.a), result_img)
-    cv2.imwrite('results/test_out.jpg', result_img)
+    # cv2.imwrite('results/test_out.jpg', result_img)
     
     # end time
-    terminate_t = timeit.default_timer()
+    # terminate_t = timeit.default_timer()
 
-    fps = float(1./(terminate_t - start_t ))
-    print("fps:{}\n".format(round(fps,1)))
+    # fps = float(1./(terminate_t - start_t ))
+    # print("fps:{}\n".format(round(fps,1)))
 
 
 

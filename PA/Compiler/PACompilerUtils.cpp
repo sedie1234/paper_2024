@@ -34,6 +34,8 @@ namespace onnx_mlir {
 
 void addONNXToRefinePasses(mlir::PassManager &pm, ArrayRef<std::string> execNodesOnCpu){
 
+    llvm::outs() << "ONNX to Refine Passes\n";
+
     for(unsigned i=0; i<3; i++){
         pm.addPass(onnx_mlir::createSimplifyShapeRelatedOpsPass());
     }
@@ -65,7 +67,7 @@ void addONNXToRefinePasses(mlir::PassManager &pm, ArrayRef<std::string> execNode
 }
 
 void addRefineToCorePasses(mlir::PassManager &pm, ArrayRef<std::string> execNodesOnCpu){
-
+    llvm::outs() << "Refine to Core Passes\n";
     for(unsigned i=0; i<3; i++){
         pm.addPass(onnx_mlir::createSimplifyShapeRelatedOpsPass());
     }
@@ -97,7 +99,7 @@ void addRefineToCorePasses(mlir::PassManager &pm, ArrayRef<std::string> execNode
 }
 
 void addCoreToMLIRPasses(mlir::PassManager &pm, ArrayRef<std::string> execNodesOnCpu){
-
+    llvm::outs() << "Core to MLIR Passes\n";
     for(unsigned i=0; i<3; i++){
         pm.addPass(onnx_mlir::createSimplifyShapeRelatedOpsPass());
     }
@@ -143,13 +145,16 @@ void addPassesPA(mlir::OwningOpRef<mlir::ModuleOp> &module,
         if(paEmissionTarget >= EmitCoreIR)
             addRefineToCorePasses(pm, execNodesOnCpu);
         
+        
         addCoreToMLIRPasses(pm, execNodesOnCpu);
 
-        if(paEmissionTarget >= EmitRefineIR || paEmissionTarget >= EmitCoreIR){
+        if(paEmissionTarget <= EmitRefineIR || paEmissionTarget <= EmitCoreIR){
             emissionTarget = EmitMLIR;
+        
         }else{
+        
             pm.addPass(mlir::createCanonicalizerPass());
-
+        
             std::string optStr = getCompilerOption(OptionKind::CompilerOptLevel);
             OptLevel optLevel = OptLevel::O0;
             if (optStr == "-O0")
@@ -160,12 +165,17 @@ void addPassesPA(mlir::OwningOpRef<mlir::ModuleOp> &module,
                 optLevel = OptLevel::O2;
             else if (optStr == "-O3")
                 optLevel = OptLevel::O3;
+        
             addONNXToKrnlPasses(pm, optLevel, true, instrumentONNXSignature, ONNXOpStats);
+        
         }
     }
-
-    if (emissionTarget >= EmitLLVMIR)
+    if (emissionTarget >= EmitLLVMIR){
+        llvm::outs() << "Krnl to LLVM Passes\n";
         addKrnlToLLVMPasses(pm, outputNameNoExt, true);    
+        
+    }
+
 
 }
 

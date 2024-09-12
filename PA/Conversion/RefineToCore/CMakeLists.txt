@@ -7,17 +7,13 @@ add_onnx_mlir_library(OMRefineToCore
     OMONNXRefineToCoreIncGen
     MLIRArithToLLVM
     MLIRTransforms
-    OMONNXCoreAllocIncGen
-    OMONNXCoreReadIncGen
-    OMONNXCoreStartIncGen
-    OMONNXCoreWaitIncGen
-    OMONNXCoreWriteIncGen
+    OMONNXOps
 
     LINK_LIBS PUBLIC
     OMONNXOps
     OMONNXToKrnl
-    OMRefineOps
     OMCoreOps
+    OMRefineOps
     MLIRArithToLLVM
     PARuntime
 

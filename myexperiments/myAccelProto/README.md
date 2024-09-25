@@ -4,7 +4,7 @@
 - shared memory로 레지스터 역할 수행
 - interrupt를 통해 동작제어
 
-------------[그림]------------
+![myAccel 구조](https://github.com/sedie1234/paper_2024/blob/main/myexperiments/myAccelProto/src/my%20accel%20for%20experiment.jpg)
 
 ## myaccel build
 ```

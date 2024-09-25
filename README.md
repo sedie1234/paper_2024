@@ -2,7 +2,8 @@
 > 1. Refine-Core 구조
 > 2. Runtime을 통해 accelerator 연결
 > 3. 성능측정
-
+![Refine-Core 구조](https://github.com/sedie1234/paper_2024/blob/main/my%20abstract%20level%20architecture.jpg)
+![실험을 위한 myAccel 구조](https://github.com/sedie1234/paper_2024/blob/main/myexperiments/myAccelProto/src/my%20accel%20for%20experiment.jpg)
 # 0. Install
 > onnx-mlir v0.4.1.2를 기준으로 함
 

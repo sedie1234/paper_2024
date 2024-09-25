@@ -12,9 +12,9 @@ $ sudo apt install libssl-dev
 |dialect|operation|간략한 설명|
 |:---:|:---:|:---|
 |refine|Add|행렬간 덧셈|
-|refine|Concat|행렬 병합|
-|refine|Conv|convolution|
-|refine|Div|두 행렬의 각 element끼리 나눔|
+||Concat|행렬 병합|
+||Conv|convolution|
+||Div|두 행렬의 각 element끼리 나눔|
 |refine|Maxpool|MAX 방식의 pooling|
 |refine|Mul|두 행렬의 각 element끼리 곱셈|
 |refine|Resize|행렬의 크기 조정, 복사방식으로 고정|

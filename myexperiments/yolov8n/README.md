@@ -91,12 +91,16 @@ $ python3 run_sigmoid_test.py
    split_tensor = "/model.0/conv/Conv_output_0"
  - 노드를 9개만 포함하는 방식
    split_tensor = "/model.2/cv1/act/Mul_output_0"
- - util/_yolo.py의 14~17번 줄과 44, 45번 줄 수정
+ - util/_yolo.py의 14~18번 줄과 44, 45번 줄 수정
+ - 방법 1 : control_session=2, model_split=0으로 하고 ort_on과 om_on을 0과 1로 바꿔가며 실험
+ - 방법 2 : control_session=1로 두어 onnxruntime으로 inference 수행 (yolo모델이어야 함)
+ - 방법 3 : control_session=0으로 두어 onnx-mlir로 inference 수행 (yolo 모델이어야 함, 현재는 안됨)
 ```
 14 control_session = 2 # 2: compare onnxruntime & onnx-mlir // 1: onnxruntime // 0: onnx-mlir
 15 model_split = 0
 16 ort_on = 1
 17 om_on = 1
+18 model_base = './part9'
 
 44 self.session = onnxruntime.InferenceSession('./_9_part1.onnx')
 45 self.sessions.append(OMExecutionSession('./_9_part1.so'))

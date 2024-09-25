@@ -71,7 +71,7 @@ session = OMExecutionSession(model_shared_lib.so)
 output = session.run(input)
 ```
 
-3) compile options
+3) compile options<br>
 |category|option|내용|
 |:---:|:---:|:---|
 |lowering level|--EmitONNXIR|ONNX level까지 lowering|

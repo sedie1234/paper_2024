@@ -36,20 +36,16 @@ application level에 가까운 기능들을 수행하는 dialect
 1) accelerator가 지원하는 operation들 수집. 
 2) operation결합, 상쇄, 순서교환
 
-- 2)는 아직 구현안됨
-
 ### Core Dialect
 accelerator에 가까운 기능들을 수행하는 dialect
 1) accelerator를 사용하기 위한 기능들로 구성
 2) accelerator용 runtime과 연결
 3) 명령어 사이의 상쇄, 순서교환 등 컴파일 기법들 적용
 
-- 3)은 아직 구현안됨
-
 ## 2. usage
 1. onnx-mlir/src/Accelerator에 복사
 2. onnxmlir-build.sh 수정 후 실행
-3. 원하는 위치에 복사하여 사용 - [예시]()
+3. onnx-mlir을 원하는 위치에 복사하여 사용 - [예시]()
 
 ### build && install
 ```
@@ -74,3 +70,17 @@ session = OMExecutionSession(model_shared_lib.so)
 
 output = session.run(input)
 ```
+
+3) compile options
+|category|option|내용|
+|:---:|:---:|:---|
+|lowering level|--EmitONNXIR|ONNX level까지 lowering|
+||--EmitRefineIR|Refine level까지 lowering|
+||--EmitCoreHighIR|Core level까지 lowering, core dialect가 포함된 구성|
+||--EmitCoreLowIR|Core level까지 lowering, mlir dialect구성까지|
+||--EmitMLIR|MLIR level까지 lowering|
+||--EmitLLVMIR|LLVM level까지 lowering|
+||--EmitLib|shared library(binary) 까지 lowering|
+|optimize|--enable-refine-opt|refine level에서 optimize 알고리즘 적용|
+||--enable-core-opt|coreHigh level에서 optimize 알고리즘 적용|
+

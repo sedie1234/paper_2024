@@ -12,9 +12,9 @@ $ sudo apt install libssl-dev
 |dialect|operation|간략한 설명|
 |:---:|:---:|:---|
 |refine|Add|행렬간 덧셈|
-||Concat|행렬 병합|
-||Conv|convolution|
-||Div|두 행렬의 각 element끼리 나눔|
+|refine|Concat|행렬 병합|
+|refine|Conv|convolution|
+|refine|Div|두 행렬의 각 element끼리 나눔|
 |refine|Maxpool|MAX 방식의 pooling|
 |refine|Mul|두 행렬의 각 element끼리 곱셈|
 |refine|Resize|행렬의 크기 조정, 복사방식으로 고정|
@@ -75,12 +75,12 @@ output = session.run(input)
 |category|option|내용|
 |:---:|:---:|:---|
 |lowering level|--EmitONNXIR|ONNX level까지 lowering|
-||--EmitRefineIR|Refine level까지 lowering|
-||--EmitCoreHighIR|Core level까지 lowering, core dialect가 포함된 구성|
-||--EmitCoreLowIR|Core level까지 lowering, mlir dialect구성까지|
-||--EmitMLIR|MLIR level까지 lowering|
-||--EmitLLVMIR|LLVM level까지 lowering|
-||--EmitLib|shared library(binary) 까지 lowering|
+|lowering level|--EmitRefineIR|Refine level까지 lowering|
+|lowering level|--EmitCoreHighIR|Core level까지 lowering, core dialect가 포함된 구성|
+|lowering level|--EmitCoreLowIR|Core level까지 lowering, mlir dialect구성까지|
+|lowering level|--EmitMLIR|MLIR level까지 lowering|
+|lowering level|--EmitLLVMIR|LLVM level까지 lowering|
+|lowering level|--EmitLib|shared library(binary) 까지 lowering|
 |optimize|--enable-refine-opt|refine level에서 optimize 알고리즘 적용|
-||--enable-core-opt|coreHigh level에서 optimize 알고리즘 적용|
+|optimize|--enable-core-opt|coreHigh level에서 optimize 알고리즘 적용|
 

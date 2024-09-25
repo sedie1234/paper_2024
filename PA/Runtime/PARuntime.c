@@ -27,6 +27,8 @@
 #define BANKSIZE        0x10000
 #define BANKNUM         300
 
+#define WRITE_TIME          5
+#define READ_TIME           6
 
 enum{
     SIG_WRITE,
@@ -64,6 +66,8 @@ typedef struct {
     MD5_t instID;
     int8_t GBlockinfo; //000000XY // X:h2c // Y:c2h //0:unlock, 1:lock
     int banklockinfo[BANKNUM/32 + (BANKNUM % 32 != 0)];
+    int64_t write_time;
+    int64_t read_time;
 } SharedData;
 
 
@@ -79,6 +83,7 @@ int pushInst(int optype, char* instID, int outsize, int config0, int config1, in
              int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int chain);
 void readFromAccel(float* data, int size, char* instID, int arg, int chain);
 int waitInst(char* instID, int chain);
+int ReadAllocWriteOptCallback(char* prevID, char* instID, int arg, int dummy, int64_t* shape);
 
 //simple runtime functions 
 void runtimeConcat(float* input0, float* input1, float* out, int64_t* shape0, int64_t* shape1);
@@ -91,6 +96,9 @@ void runtimeSlice(float* input, int64_t* starts, int64_t* ends, int64_t* axes, i
 
 //utils
 int64_t getLinearIndex(int64_t* shape, int64_t* indices, int rank);
+void bankSet(SharedData* shared_data, MD5_t prevID, int arg, MD5_t ID, int as, int64_t* shape);
+int MD5Compare(MD5_t ID1, MD5_t ID2);
+
 
 //memory block
 void h2cLock(SharedData* shm);
@@ -193,6 +201,9 @@ int writeToAccel(float* data, int size, char* instID, int arg, int64_t* shape) {
 
     h2cSet(shared_data);
     h2cUnLock(shared_data);
+
+    shared_data->write_time += WRITE_TIME * datasize;
+
     shmdt(shared_data);
 
     return 0;
@@ -273,6 +284,8 @@ void readFromAccel(float* data, int size, char* instID, int arg, int chain) {
     printf("\r\n");
 
     fclose(file);
+
+    shared_data->read_time += WRITE_TIME * datasize;
 
     c2hUnLock(shared_data);
     shmdt(shared_data);
@@ -364,6 +377,35 @@ int waitInst(char* instID, int chain) {
     return -1;
 }
 
+int ReadAllocWriteOptCallback(char* prevID, char* instID, int arg, int dummy, int64_t* shape){
+
+    key_t key = ftok("shmfile", 65);
+    int shmid = shmget(key, sizeof(SharedData), 0666 | IPC_CREAT);
+    SharedData *shared_data = (SharedData*) shmat(shmid, (void*)0, 0);
+
+    unsigned char MD5ID[16];
+    unsigned char prevMD5ID[16];
+    computeMD5(instID, MD5ID);
+    computeMD5(prevID, prevMD5ID);
+
+    MD5_t MD5;
+    MD5_t prevMD5;
+
+    int64_t dummyshape[4] = {0,0,0,0};
+
+    memcpy(&MD5, MD5ID, 16);
+    memcpy(&prevMD5, prevMD5ID, 16);
+
+    bankSet(shared_data, prevMD5, 0, prevMD5, -1, dummyshape);
+    bankSet(shared_data, prevMD5, 1, prevMD5, -1, dummyshape);
+    bankSet(shared_data, prevMD5, 2, prevMD5, -1, dummyshape);
+    bankSet(shared_data, prevMD5, 55, MD5, arg, shape);
+    bankSet(shared_data, prevMD5, 56, MD5, arg, shape);
+    shmdt(shared_data);
+
+    return 0;
+}
+
 void runtimeSplit(float* input, float* out0, float* out1, int64_t* shape, 
                     int64_t split1, int64_t split2, int rank){
     printf("runtime Split >> Split!! \r\n");
@@ -409,6 +451,12 @@ void runtimeResize(float* input, float* output, int64_t* shape){
 
     int outH = H * 2;
     int outW = W * 2;
+
+    printf("resize runtime >>> \r\n"
+           "input pointer : %p \r\n"
+           "output pointer : %p \r\n"
+           "size : [%d, %d, %d, %d] |  [%d, %d, %d, %d]\r\n", input, output, 
+                    N, C, H, W, N, C, outH, outW);
 
     // N, C, H, W 순서로 입력을 순회하면서 nearest 방식으로 값을 복사
     for (int n = 0; n < N; ++n) {          // Batch loop
@@ -618,4 +666,32 @@ void computeMD5(const char* str, unsigned char* md5_result) {
     printf("hash length : %d\r\n", length);
     // MD5 함수를 사용하여 해시를 계산하고 결과를 result 배열에 저장합니다.
     MD5((const unsigned char*)str, length, md5_result);
+}
+
+int MD5Compare(MD5_t ID1, MD5_t ID2){
+
+    int id1[4];
+    int id2[4];
+
+    memcpy(id1, &ID1, 16);
+    memcpy(id2, &ID2, 16);
+
+    for(int i=0; i<4; i++){
+        if(id1[i] != id2[i])
+            return 0;
+    }
+    return 1;
+}
+
+void bankSet(SharedData* shared_data, MD5_t prevID, int arg, MD5_t ID, int as, int64_t* shape){
+    for(int i=0; i<BANKNUM; i++){
+        if(MD5Compare(shared_data->bankinfo[i].instID, prevID) 
+                && (shared_data->bankinfo[i].arg == arg)){
+            shared_data->bankinfo[i].instID = ID;
+            shared_data->bankinfo[i].arg = as;
+
+            memcpy(shared_data->bankinfo[i].shape, shape, 4*sizeof(int64_t));
+            
+        }
+    }
 }

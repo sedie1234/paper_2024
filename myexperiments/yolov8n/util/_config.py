@@ -15,6 +15,12 @@ def get_args():
     parser.add_argument('--datatype', required=False, default='fp32', \
                                                 help='[int8 / fp16 / fp32] (default: fp32)')
     
+    parser.add_argument('--model', required=False, default='yolov8n.onnx',
+                                                help='[your model]')
+    
+    parser.add_argument('--tool', required=False, default='ort',
+                                                help='[ort / om] : onnxruntime or onnx-mlir')
+    
     args = parser.parse_args()
     return args
 

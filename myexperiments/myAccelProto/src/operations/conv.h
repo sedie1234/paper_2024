@@ -6,5 +6,6 @@
 #include "../utils.h"
 
 void ConvCalculate(DataStruct container);
+void FusedConvCalculate(DataStruct container);
 
 #endif

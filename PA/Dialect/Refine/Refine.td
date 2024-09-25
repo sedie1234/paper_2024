@@ -41,6 +41,43 @@ class Refine_Op<string mnemonic, list<Trait> traits = []> :
 // Refine Operations
 //===----------------------------------------------------------------------===//
 
+def RefineFusedConvOp : Refine_Op<"FusedConv", [Pure,
+    DeclareOpInterfaceMethods<ShapeInferenceOpInterface>,
+    DeclareOpInterfaceMethods<ShapeHelperOpInterface>]> {
+
+    let summary = "Refine FusedConv operation";
+    let description = [{
+        Refine Conv operation
+        * input : tensor [N][C][H][W]
+        * kernel : tensor [N][C][K][K]
+        * bias : tensor [C]
+        * kernel_shape : [K]
+        * padding : 1D array
+        * strides : 1D array
+        * output : [N][C][H][W]
+    }];
+    let arguments = (ins TensorOf<[F32]>:$input,
+                         TensorOf<[F32]>:$kernel,
+                         Optional<TensorOf<[F32]>>:$bias,
+                         I64ArrayAttr:$kernel_shape,
+                         I64ArrayAttr:$padding,
+                         I64ArrayAttr:$strides,
+                         StrAttr:$ID);
+
+    let results = (outs TensorOf<[F32]>:$output);
+
+    let builders = [
+        OpBuilder<(ins "::mlir::Value":$input,
+                       "::mlir::Value":$kernel,
+                       "::mlir::Value":$bias,
+                       "::mlir::ArrayAttr":$kernel_shape,
+                       "::mlir::ArrayAttr":$padding,
+                       "::mlir::ArrayAttr":$strides,
+                       "::mlir::StringAttr":$ID)>
+    ];
+    let hasCanonicalizer = 1;
+}
+
 def RefineConvOp : Refine_Op<"Conv", [Pure,
     DeclareOpInterfaceMethods<ShapeInferenceOpInterface>,
     DeclareOpInterfaceMethods<ShapeHelperOpInterface>]> {

@@ -382,14 +382,14 @@ public:
         }
         
 
-        llvm::outs() << "CoreReadOp : " << castID << "\n";
-        llvm::outs() << "tatalsize : sizeValue = ";
-        for(int dim : result_shape){
-            llvm::outs() << dim << ", ";
-        }
-        llvm::outs() << totalsize << " \n";
-        sizeValue.dump();
-        llvm::outs() << " \n";
+        // llvm::outs() << "CoreReadOp : " << castID << "\n";
+        // llvm::outs() << "tatalsize : sizeValue = ";
+        // for(int dim : result_shape){
+        //     llvm::outs() << dim << ", ";
+        // }
+        // llvm::outs() << totalsize << " \n";
+        // sizeValue.dump();
+        // llvm::outs() << " \n";
 
         auto elementType = rewriter.getF32Type();
         // auto memrefType = MemRefType::get(shape, elementType);

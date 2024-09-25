@@ -53,6 +53,8 @@ typedef struct {
     MD5_t instID;
     int8_t GBlockinfo; //0b000000XY // X:h2c // Y:c2h //0:unlock, 1:lock
     int banklockinfo[BANKNUM/32 + bool(BANKNUM%32)]; //192bit banklock info //0:unlock, 1:lock
+    int64_t write_time;
+    int64_t read_time;
 } SharedData;
 
 

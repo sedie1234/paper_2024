@@ -62,6 +62,194 @@ public:
 };
 } // end anonymous namespace
 
+
+class ConvertRefineFusedConvToCore : public OpRewritePattern<refine::RefineFusedConvOp> {
+public:
+    using OpRewritePattern<refine::RefineFusedConvOp>::OpRewritePattern;
+    LogicalResult matchAndRewrite(refine::RefineFusedConvOp op, PatternRewriter &rewriter) const override{
+
+        auto loc = op.getLoc();
+        Type resultType = op.getResult().getType();
+
+        Value input = op.getOperand(0);
+        Value kernel = op.getOperand(1);
+        // Value bias = op.getOperand(2);
+        Value bias;
+
+        // Check if bias operand exists
+        if (op.getNumOperands() > 2) {
+            bias = op.getOperand(2);  // If bias exists, use it
+        } else {
+            bias = mlir::Value();     // If bias does not exist, set bias as NoneType (empty Value)
+        }
+
+        auto kernel_shape = op->getAttr("kernel_shape");
+        auto padding = op->getAttr("padding");
+        auto strides = op->getAttr("strides");
+        auto ID = op->getAttr("ID");
+
+        auto castID = ID.cast<StringAttr>();
+
+        auto f32Type = rewriter.getF32Type();
+        auto llvmF32PtrType = LLVM::LLVMPointerType::get(f32Type);
+
+        auto int32Type = rewriter.getIntegerType(32);
+        auto int8Type = rewriter.getIntegerType(8);
+        auto zeroAttr = rewriter.getI32IntegerAttr(0);
+        auto oneAttr = rewriter.getI32IntegerAttr(1);
+        auto twoAttr = rewriter.getI32IntegerAttr(2);
+        auto nineAttr = rewriter.getI32IntegerAttr(9);
+        auto resAttr = rewriter.getI32IntegerAttr(55);
+
+        auto zero = rewriter.create<arith::ConstantOp>(loc, int32Type, zeroAttr);
+        auto one = rewriter.create<arith::ConstantOp>(loc, int32Type, oneAttr);
+        auto two = rewriter.create<arith::ConstantOp>(loc, int32Type, twoAttr);
+        auto nine = rewriter.create<arith::ConstantOp>(loc, int32Type, nineAttr);
+        auto res = rewriter.create<arith::ConstantOp>(loc, int32Type, resAttr);
+        
+        auto inputTensorType = input.getType().dyn_cast<mlir::RankedTensorType>();
+        auto kernelTensorType = kernel.getType().dyn_cast<mlir::RankedTensorType>();
+
+
+        if(!inputTensorType || !kernelTensorType){
+            return rewriter.notifyMatchFailure(op, "Expected input to be a RankedTensorType");
+        }
+
+        llvm::ArrayRef<int64_t> inputShape = inputTensorType.getShape();
+        llvm::ArrayRef<int64_t> kernelShape = kernelTensorType.getShape();
+
+        mlir::Type inputElementType = inputTensorType.getElementType();
+        mlir::Type kernelElementType = kernelTensorType.getElementType();
+
+        auto inputMemrefType = mlir::MemRefType::get(inputShape, inputElementType);
+        auto kernelMemrefType = mlir::MemRefType::get(kernelShape, kernelElementType);
+
+        //get out shape
+        Value inputMemref = rewriter.create<core::CoreAllocOp>(loc, inputMemrefType, input);
+        Value kernelMemref = rewriter.create<core::CoreAllocOp>(loc, kernelMemrefType, kernel);
+
+        llvm::ArrayRef<int64_t> _input_shape = inputMemrefType.getShape();
+        llvm::ArrayRef<int64_t> _kernel_shape = kernelMemrefType.getShape();
+
+        llvm::SmallVector<mlir::Attribute, 1> input_shape_attr;
+        llvm::SmallVector<mlir::Attribute, 1> kernel_shape_attr;
+
+        for(int64_t dimSize : _input_shape){
+            input_shape_attr.push_back(rewriter.getI64IntegerAttr(dimSize));
+        }
+
+        for(int64_t dimSize : _kernel_shape){
+            kernel_shape_attr.push_back(rewriter.getI64IntegerAttr(dimSize));
+        }
+
+
+        llvm::SmallVector<mlir::Attribute, 1> bias_shape_attr;
+        llvm::ArrayRef<int64_t> _bias_shape;
+        Value biasMemref;
+
+
+        if(bias){
+            auto biasTensorType = bias.getType().dyn_cast<mlir::RankedTensorType>();
+            llvm::ArrayRef<int64_t> biasShape = biasTensorType.getShape();
+            mlir::Type biasElementType = biasTensorType.getElementType();
+            
+            auto biasMemrefType = mlir::MemRefType::get(biasShape, biasElementType);
+            biasMemref = rewriter.create<core::CoreAllocOp>(loc, biasMemrefType, bias);
+
+
+            
+            _bias_shape = biasMemrefType.getShape();
+            bias_shape_attr.push_back(rewriter.getI64IntegerAttr(1));
+            bias_shape_attr.push_back(rewriter.getI64IntegerAttr(1));
+            bias_shape_attr.push_back(rewriter.getI64IntegerAttr(1));
+
+
+            for(int64_t dimSize : _bias_shape){
+                bias_shape_attr.push_back(rewriter.getI64IntegerAttr(dimSize));
+            }
+
+        }else{
+            auto biasMemrefType = mlir::MemRefType::get({_kernel_shape[0], 1, 1, 1}, f32Type);
+            biasMemref = rewriter.create<memref::AllocOp>(loc, biasMemrefType);
+
+            _bias_shape = biasMemrefType.getShape();
+            bias_shape_attr.push_back(rewriter.getI64IntegerAttr(1));
+            bias_shape_attr.push_back(rewriter.getI64IntegerAttr(1));
+            bias_shape_attr.push_back(rewriter.getI64IntegerAttr(1));
+            bias_shape_attr.push_back(rewriter.getI64IntegerAttr(_kernel_shape[0]));
+        }
+
+        
+
+        auto input_shape_arrayAttr = rewriter.getArrayAttr(input_shape_attr);
+        auto kernel_shape_arrayAttr = rewriter.getArrayAttr(kernel_shape_attr);
+        auto bias_shape_arrayAttr = rewriter.getArrayAttr(bias_shape_attr);
+
+        //input setup
+        Value inputAddr = rewriter.create<core::CoreWriteOp>(loc, int32Type, inputMemref, castID, zero, input_shape_arrayAttr); // arg0 = input
+
+        //kernel setup
+        Value kernelAddr = rewriter.create<core::CoreWriteOp>(loc, int32Type, kernelMemref, castID, one, kernel_shape_arrayAttr);
+
+        //bias setup
+        Value biasAddr = rewriter.create<core::CoreWriteOp>(loc, int32Type, biasMemref, castID, two, bias_shape_arrayAttr);
+
+    //core start
+        auto paddingAttr = padding.dyn_cast_or_null<mlir::ArrayAttr>();
+        auto padding2Attr = paddingAttr.getValue()[0].dyn_cast<mlir::IntegerAttr>();
+
+        auto strideAttr = strides.dyn_cast_or_null<mlir::ArrayAttr>();
+        auto stride2Attr = strideAttr.getValue()[0].dyn_cast<mlir::IntegerAttr>();
+
+        if(_input_shape[0] == -1 || _kernel_shape[0] == -1){
+            llvm::outs() << "input memref shape is dynamic\n";
+            return failure();
+        }
+
+        int64_t paddingValueInt = padding2Attr.getInt();
+        int64_t strideValueInt = stride2Attr.getInt();
+
+        int64_t outH = (_input_shape[2] + 2 * paddingValueInt - (_kernel_shape[2] - 1) - 1) / strideValueInt + 1;
+        int64_t outW = (_input_shape[3] + 2 * paddingValueInt - (_kernel_shape[3] - 1) - 1) / strideValueInt + 1;
+
+        auto outputShape = rewriter.getI64ArrayAttr({_input_shape[0], _kernel_shape[0], outH, outW});
+
+        int32_t outsize = outH * outW * _input_shape[0] * _kernel_shape[0];
+        auto outsizeValue = rewriter.create<arith::ConstantOp>(loc, int32Type, rewriter.getI32IntegerAttr(outsize));
+        auto outsizeValueAttr = rewriter.getI32IntegerAttr(outsize);
+
+        auto kernelValue = rewriter.create<arith::ConstantOp>(loc, int32Type, rewriter.getI32IntegerAttr(_kernel_shape[3]));
+        auto paddingValue = rewriter.create<arith::ConstantOp>(loc, int32Type, rewriter.getI32IntegerAttr(paddingValueInt));
+        auto strideValue = rewriter.create<arith::ConstantOp>(loc, int32Type, rewriter.getI32IntegerAttr(strideValueInt));
+
+        auto start_chain_out = rewriter.create<core::CoreStartOp>(loc, int32Type,
+                                    castID, 
+                                    nine, // nine : optype = fusedconv type 
+                                    outsizeValue,
+                                    kernelValue,    //config0
+                                    paddingValue,   //config1
+                                    strideValue,    //config2
+                                    inputAddr,      //arg0
+                                    kernelAddr,     //arg1
+                                    biasAddr,       //arg2
+                                    zero, zero, zero, zero, zero, zero,//arg3 ~ arg8
+                                    inputAddr
+                                    );
+
+        auto wait_chain_out = rewriter.create<core::CoreWaitOp>(loc, int32Type, castID, start_chain_out.getResult());
+        auto outputTensor = rewriter.create<core::CoreReadOp>(loc, resultType, outsizeValue, castID, res, outputShape, wait_chain_out.getResult());
+
+        // rewriter.create<memref::DeallocOp>(loc, inputMemref);
+        // rewriter.create<memref::DeallocOp>(loc, kernelMemref);
+        // rewriter.create<memref::DeallocOp>(loc, biasMemref);
+
+        rewriter.replaceOp(op, outputTensor);
+
+        return success();
+    }
+};
+
+
 class ConvertRefineConvToCore : public OpRewritePattern<refine::RefineConvOp> {
 public:
     using OpRewritePattern<refine::RefineConvOp>::OpRewritePattern;
@@ -284,12 +472,12 @@ public:
 
     // 2. WriteOp 생성
     llvm::SmallVector<mlir::Attribute, 1> input_shape_attr;
-    llvm::outs() << "Refine Sigmoid input shape : " << castID << "\n";
+    // llvm::outs() << "Refine Sigmoid input shape : " << castID << "\n";
     for (int64_t dimSize : inputShape) {
-        llvm::outs() << dimSize << ", ";
+        // llvm::outs() << dimSize << ", ";
         input_shape_attr.push_back(rewriter.getI64IntegerAttr(dimSize));
     }
-    llvm::outs() << "\n";
+    // llvm::outs() << "\n";
 
     auto input_shape_arrayAttr = rewriter.getArrayAttr(input_shape_attr);
 
@@ -311,12 +499,12 @@ public:
     outsize = 1;
     llvm::ArrayRef<int64_t> result_shape = resultType.getShape();
 
-    llvm::outs() << "Refine Sigmoid output shape : " << castID << "\n";
+    // llvm::outs() << "Refine Sigmoid output shape : " << castID << "\n";
     for(int64_t dim : result_shape){
         outsize *= dim;
-        llvm::outs() << dim << ", ";
+        // llvm::outs() << dim << ", ";
     }
-    llvm::outs() << "\n";
+    // llvm::outs() << "\n";
 
     auto outsizeValue = rewriter.create<arith::ConstantOp>(loc, int32Type, rewriter.getI32IntegerAttr(outsize));
     auto start_chain_out = rewriter.create<core::CoreStartOp>(
@@ -1461,7 +1649,7 @@ void RefineToCoreLoweringPass::runOnOperation(){
 
     RewritePatternSet patterns(&getContext());
 
-    patterns.add<ConvertRefineConvToCore, ConvertRefineSigmoidToCore, 
+    patterns.add<ConvertRefineFusedConvToCore, ConvertRefineConvToCore, ConvertRefineSigmoidToCore, 
         ConvertRefineMulToCore, ConvertRefineSplitToCore, ConvertRefineAddToCore,
         ConvertRefineConcatToCore, ConvertRefineMaxpoolToCore, ConvertRefineResizeToCore,
         ConvertRefineTransposeToCore, ConvertRefineSoftmaxToCore, ConvertRefineSliceToCore,

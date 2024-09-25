@@ -12,7 +12,7 @@ classes = _config.get_classes(opt.app)
 
 if __name__ == '__main__':
     
-    yolo = _yolo.Yolo(opt.datatype, opt.app)
+    yolo = _yolo.Yolo(opt.datatype, opt.app, opt.model)
     counter = 0
 
     # start time

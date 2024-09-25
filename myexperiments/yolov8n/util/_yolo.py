@@ -11,18 +11,20 @@ from . _utils import xywh2xyxy, nms, draw, sigmoid, rescale_boxes
 from . _config import get_classes
 
 
-control_session = 2 # 2: compare onnxruntime & onnx-mlir // 1: onnxruntime // 0: onnx-mlir
+control_session = 0 # 2: compare onnxruntime & onnx-mlir // 1: onnxruntime // 0: onnx-mlir
 model_split = 0
-ort_on = 1
+ort_on = 0
 om_on = 1
+model_base = './part1'
 
 class Yolo:
-    def __init__(self, data_type, app_type, conf_thres=0.3, iou_thres=0.5, input_size=640):
+    def __init__(self, data_type, app_type, model, conf_thres=0.3, iou_thres=0.5, input_size=640):
 
         self.classes = get_classes(app_type)
         self.colors = np.random.uniform(0, 255, size=(len(self.classes), 3))
         self.data_type = data_type
         self.app_type = app_type
+        self.model = model
 
         self.num_masks = 32
 
@@ -37,12 +39,13 @@ class Yolo:
         elif control_session == 0:
             if model_split == 0:
                 self.session = self.sess_init('./yolov8n.so')
+                # self.session = self.sess_init(self.model)
             elif model_split == 1:
                 self.sessions.append(self.sess_init('./part1.so'))
                 self.sessions.append(self.sess_init('./part2.so'))
         elif control_session == 2:
-            self.session = onnxruntime.InferenceSession('./_9_part1.onnx')
-            self.sessions.append(OMExecutionSession('./_9_part1.so'))
+            self.session = onnxruntime.InferenceSession(model_base + '.onnx')
+            self.sessions.append(OMExecutionSession(model_base + '.so'))
                 
         
         self.input_size = input_size
@@ -80,7 +83,12 @@ class Yolo:
         return input_tensor.astype(np.float32)
 
     def inference(self, image):
-        input_tensor = self.preprocess(image)
+        input_tensor = None
+        if self.app_type == 'interval0':
+            input_tensor = image
+        else:
+            input_tensor = self.preprocess(image)
+            
         temp_out = input_tensor
         outputs = None
         if control_session == 1:
@@ -255,6 +263,14 @@ class Yolo:
         elif self.app_type == 'test':
             outputs = self.inference(image)
             return outputs
+        elif self.app_type == 'interval0':
+            outputs = self.inference(image)
+            return outputs
+        elif self.app_type == 'interval1':
+            outputs = self.inference(image)
+            boxes, scores, class_ids = self.post_process(outputs)
+            result_img = draw(image, boxes, scores, class_ids, self.colors, None, 1, self.classes)
+            return result_img
         else:
             outputs = self.inference(image)
             boxes, scores, class_ids, mask_maps = self.post_process(outputs)

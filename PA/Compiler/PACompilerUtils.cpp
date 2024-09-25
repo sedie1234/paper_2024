@@ -74,7 +74,7 @@ void addRefineToCorePasses(mlir::PassManager &pm, ArrayRef<std::string> execNode
 
     unsigned instrumentActions = instrumentControlBits;
     if (profileIR == onnx_mlir::ProfileIRs::Refine){
-        instrumentStage = onnx_mlir::InstrumentStages::Core;
+        instrumentStage = onnx_mlir::InstrumentStages::CoreHigh;
         instrumentOps = "onnx.*, refine.*, core.*";
         instrumentActions |= (1 << 3) - 1;
     }
@@ -98,6 +98,70 @@ void addRefineToCorePasses(mlir::PassManager &pm, ArrayRef<std::string> execNode
 
 }
 
+void addRefineUpperingPasses(mlir::PassManager &pm, ArrayRef<std::string> execNodesOnCpu){
+    llvm::outs() << "Refine Uppering Passes\n";
+    for(unsigned i=0; i<3; i++){
+        pm.addPass(onnx_mlir::createSimplifyShapeRelatedOpsPass());
+    }
+
+    unsigned instrumentActions = instrumentControlBits;
+    if (profileIR == onnx_mlir::ProfileIRs::Refine){
+        instrumentStage = onnx_mlir::InstrumentStages::CoreHigh;
+        instrumentOps = "onnx.*, refine.*, core.*";
+        instrumentActions |= (1 << 3) - 1;
+    }
+
+    if (instrumentStage == onnx_mlir::InstrumentStages::Onnx)
+        pm.addNestedPass<func::FuncOp>(
+            onnx_mlir::createInstrumentPass(instrumentOps, instrumentActions));
+
+    pm.addPass(onnx_mlir::createRefineUpperingPass(execNodesOnCpu));
+    pm.addNestedPass<func::FuncOp>(onnx_mlir::createShapeInferencePass());
+    pm.addNestedPass<func::FuncOp>(onnx_mlir::createDecomposeONNXToONNXPass());
+    pm.addNestedPass<func::FuncOp>(onnx_mlir::createConstPropONNXToONNXPass());
+    pm.addPass(mlir::createCanonicalizerPass());  
+
+    pm.addNestedPass<func::FuncOp>(onnx_mlir::createShapeInferencePass());
+    pm.addPass(mlir::createCanonicalizerPass());
+
+    pm.addPass(createScrubDisposablePass());
+
+    pm.addPass(mlir::createCSEPass());
+
+}
+
+void addCoreOptPasses(mlir::PassManager &pm, ArrayRef<std::string> execNodesOnCpu){
+    llvm::outs() << "Core Opt Passes\n";
+    for(unsigned i=0; i<3; i++){
+        pm.addPass(onnx_mlir::createSimplifyShapeRelatedOpsPass());
+    }
+
+    unsigned instrumentActions = instrumentControlBits;
+    if (profileIR == onnx_mlir::ProfileIRs::Refine){
+        instrumentStage = onnx_mlir::InstrumentStages::CoreHigh;
+        instrumentOps = "onnx.*, refine.*, core.*";
+        instrumentActions |= (1 << 3) - 1;
+    }
+
+    if (instrumentStage == onnx_mlir::InstrumentStages::Onnx)
+        pm.addNestedPass<func::FuncOp>(
+            onnx_mlir::createInstrumentPass(instrumentOps, instrumentActions));
+
+    pm.addPass(onnx_mlir::createCoreOptPass(execNodesOnCpu));
+    pm.addNestedPass<func::FuncOp>(onnx_mlir::createShapeInferencePass());
+    pm.addNestedPass<func::FuncOp>(onnx_mlir::createDecomposeONNXToONNXPass());
+    pm.addNestedPass<func::FuncOp>(onnx_mlir::createConstPropONNXToONNXPass());
+    pm.addPass(mlir::createCanonicalizerPass());  
+
+    pm.addNestedPass<func::FuncOp>(onnx_mlir::createShapeInferencePass());
+    pm.addPass(mlir::createCanonicalizerPass());
+
+    pm.addPass(createScrubDisposablePass());
+
+    pm.addPass(mlir::createCSEPass());
+
+}
+
 void addCoreToMLIRPasses(mlir::PassManager &pm, ArrayRef<std::string> execNodesOnCpu){
     llvm::outs() << "Core to MLIR Passes\n";
     for(unsigned i=0; i<3; i++){
@@ -106,7 +170,7 @@ void addCoreToMLIRPasses(mlir::PassManager &pm, ArrayRef<std::string> execNodesO
 
     unsigned instrumentActions = instrumentControlBits;
     if (profileIR == onnx_mlir::ProfileIRs::Refine){
-        instrumentStage = onnx_mlir::InstrumentStages::Core;
+        instrumentStage = onnx_mlir::InstrumentStages::CoreLow;
         instrumentOps = "onnx.*, refine.*, core.*";
         instrumentActions |= (1 << 3) - 1;
     }
@@ -139,16 +203,27 @@ void addPassesPA(mlir::OwningOpRef<mlir::ModuleOp> &module,
         addONNXToMLIRPasses(pm, maccel.empty());
     
     if(emissionTarget >= EmitMLIR) {
-        if(paEmissionTarget >= EmitRefineIR)
+        if(paEmissionTarget >= EmitRefineIR){
             addONNXToRefinePasses(pm, execNodesOnCpu);
-        
-        if(paEmissionTarget >= EmitCoreIR)
-            addRefineToCorePasses(pm, execNodesOnCpu);
-        
-        
-        addCoreToMLIRPasses(pm, execNodesOnCpu);
+        }
 
-        if(paEmissionTarget <= EmitRefineIR || paEmissionTarget <= EmitCoreIR){
+        if(paEnableRefineOpt){
+            addRefineUpperingPasses(pm, execNodesOnCpu);
+        }
+
+        if(paEmissionTarget >= EmitCoreHighIR){
+            addRefineToCorePasses(pm, execNodesOnCpu);
+        }
+
+        if(paEnableCoreOpt){
+            addCoreOptPasses(pm, execNodesOnCpu);
+        }
+
+        if(paEmissionTarget >= EmitCoreLowIR){
+            addCoreToMLIRPasses(pm, execNodesOnCpu);
+        }
+
+        if(paEmissionTarget <= EmitCoreLowIR){
             emissionTarget = EmitMLIR;
         
         }else{

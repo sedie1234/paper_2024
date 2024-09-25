@@ -39,6 +39,8 @@ typedef struct {
     MD5_t instID;
     int8_t GBlockinfo; //0b000000XY // X:h2c // Y:c2h //0:unlock, 1:lock
     int banklockinfo[BANKNUM/32 + bool(BANKNUM%32)]; //192bit banklock info //0:unlock, 1:lock
+    int64_t write_time;
+    int64_t read_time;
 } SharedData;
 
 SharedData *shared_data;
@@ -48,6 +50,8 @@ void dumpSharedMemory();
 void dumpBank();
 void dumpQueue();
 void printCMD();
+void timeCheck();
+void timeReset();
 
 #include <iostream>
 #include <string>
@@ -82,6 +86,10 @@ int main() {
             dumpQueue();
         }else if(input == "h"){
             printCMD();
+        }else if(input == "t"){
+            timeCheck();
+        }else if(input == "s"){
+            timeReset();
         }
 
 
@@ -89,6 +97,17 @@ int main() {
     }
 
     return 0;
+}
+
+void timeCheck(){
+    printf("write time profile : %ld\r\n", shared_data->write_time);
+    printf("read time profile  : %ld\r\n", shared_data->read_time);
+    printf("whole time profile : %ld\r\n", shared_data->write_time + shared_data->read_time);
+    return;
+}
+void timeReset(){
+    shared_data->write_time = 0;
+    shared_data->read_time = 0;
 }
 
 void dumpQueue(){
@@ -116,6 +135,8 @@ void printCMD(){
     printf("b : bank dump\r\n");
     printf("g : inst Queue dump\r\n");
     printf("q : quit\r\n");
+    printf("t : time check \r\n");
+    printf("s : time reset \r\n");
     printf("h : help\r\n");
 }
 

@@ -1,3 +1,5 @@
 add_subdirectory(ONNXToRefine)
 add_subdirectory(RefineToCore)
+add_subdirectory(RefineUppering)
 add_subdirectory(CoreToMLIR)
+add_subdirectory(CoreOpt)

@@ -46,6 +46,8 @@ void runCore(int order){
         runSub(cmd);
     }else if(cmd.optype == DIVTYPE){
         runDiv(cmd);
+    }else if(cmd.optype == FUSEDCONVTYPE){
+        runFusedConv(cmd);
     }else{
         return;
     }
@@ -223,6 +225,176 @@ void runConv(Inst cmd){
     free(outbuffer);
     
 }
+
+void runFusedConv(Inst cmd){
+    DataStruct container;
+    
+    //get bankinfo
+    int inputbank = getBank(cmd.instID, 0);
+    int input_startbank = (inputbank >> 16) & 0x0000FFFF;
+    int input_endbank = inputbank & 0x0000FFFF;
+
+    int kernelbank = getBank(cmd.instID, 1);
+    int kernel_startbank = (kernelbank >>16) & 0x0000FFFF;
+    int kernel_endbank = kernelbank & 0x0000FFFF;
+
+    int biasbank = getBank(cmd.instID, 2);
+    int bias_startbank = (biasbank >> 16) & 0x0000FFFF;
+    int bias_endbank = biasbank & 0x0000FFFF;
+
+    memcpy(container.shape[0], shared_data->bankinfo[input_startbank].shape, 32);
+    memcpy(container.shape[1], shared_data->bankinfo[kernel_startbank].shape, 32);
+    memcpy(container.shape[2], shared_data->bankinfo[bias_startbank].shape, 32);
+
+    int64_t inputsize = getsize(container.shape[0], 4);
+    int64_t kernelsize = getsize(container.shape[1], 4);
+    int64_t biassize = getsize(container.shape[2], 4);
+
+
+    float* inputbuffer = (float*)malloc(sizeof(float)*inputsize*1.01);
+    float* kernelbuffer = (float*)malloc(sizeof(float)*kernelsize);
+    float* biasbuffer = (float*)malloc(sizeof(float)*biassize);
+    float* outbuffer = (float*)malloc(sizeof(float)*cmd.outsize);
+
+    container.config[0] = cmd.config[0];
+    container.config[1] = cmd.config[1];
+    container.config[2] = cmd.config[2];
+    
+    //alloc output mem
+    int outstartbank = seekBank(cmd.outsize);
+    int outbanknum = allocatedBankNum(cmd.outsize);
+
+    printf("outstartbank : %d \r\n", outstartbank);
+    printf("allocatedBankNum : %d \r\n", outbanknum);
+
+    //output bank lock and info set
+    for(int i=0; i<outbanknum; i++){
+        int bankIndex = outstartbank + i;
+        int arrayIndex = bankIndex / 32;  
+        int bitPosition = bankIndex % 32; 
+    
+        if(!(shared_data->banklockinfo[arrayIndex] & (1 << bitPosition)))
+            shared_data->banklockinfo[arrayIndex] |= (1 << bitPosition);
+        else
+            i--;
+
+        shared_data->bankinfo[outstartbank + i].instID = cmd.instID;
+        if(i==0)
+            shared_data->bankinfo[outstartbank + i].arg = 56;
+        else
+            shared_data->bankinfo[outstartbank + i].arg = 55;
+        //out shape?
+    }
+
+    //read data
+    char filename[20];
+
+    bankLock(input_startbank, input_endbank-input_startbank+1);
+    bankLock(kernel_startbank, kernel_endbank-kernel_startbank+1);
+    bankLock(bias_startbank, bias_endbank-bias_startbank+1);
+
+    //input read
+    memset(filename, 0, 20);    
+    int cnt=0;
+    for(int i=input_startbank; i<input_endbank+1; i++){
+        sprintf(filename, "%s%d", BANK_BASE_FILENAME, i);
+        FILE* mfile = fopen(filename, "rb");
+        if(mfile == NULL){
+            perror("Error opening file for writing");
+            return;
+        }
+        if(inputsize*sizeof(float) - cnt*BANKSIZE > BANKSIZE){
+            fread(inputbuffer + cnt*BANKSIZE/4, sizeof(char), BANKSIZE, mfile);
+        }else{
+            fread(inputbuffer + cnt*BANKSIZE/4, sizeof(char), inputsize*sizeof(float) - cnt*BANKSIZE, mfile);
+        }
+        cnt++;
+        fclose(mfile);
+    }
+
+    //kernel read
+    memset(filename, 0, 20);    
+    cnt = 0;
+    for(int i=kernel_startbank; i<kernel_endbank+1; i++){
+        sprintf(filename, "%s%d", BANK_BASE_FILENAME, i);
+        FILE* mfile = fopen(filename, "rb");
+        if(mfile == NULL){
+            perror("Error opening file for writing");
+            return;
+        }
+        if(kernelsize*sizeof(float) - cnt*BANKSIZE > BANKSIZE){
+            fread(kernelbuffer + cnt*BANKSIZE/4, sizeof(char), BANKSIZE, mfile);
+        }else{
+            fread(kernelbuffer + cnt*BANKSIZE/4, sizeof(char), kernelsize*sizeof(float) - cnt*BANKSIZE, mfile);
+        }
+        cnt++;
+        fclose(mfile);
+    }
+
+    //bias read
+    memset(filename, 0, 20);  
+    cnt = 0;  
+    for(int i=bias_startbank; i<bias_endbank+1; i++){
+        sprintf(filename, "%s%d", BANK_BASE_FILENAME, i);
+        FILE* mfile = fopen(filename, "rb");
+        if(mfile == NULL){
+            perror("Error opening file for writing");
+            return;
+        }
+        if(biassize*sizeof(float) - cnt*BANKSIZE > BANKSIZE){
+            fread(biasbuffer + cnt*BANKSIZE/4, sizeof(char), BANKSIZE, mfile);
+        }else{
+            fread(biasbuffer + cnt*BANKSIZE/4, sizeof(char), biassize*sizeof(float) - cnt*BANKSIZE, mfile);
+        }
+        cnt++;
+        fclose(mfile);
+    }
+    //mapping data
+
+    container.arg_f[0] = inputbuffer;
+    container.arg_f[1] = kernelbuffer;
+    container.arg_f[2] = biasbuffer;
+    container.arg_f[3] = outbuffer;
+
+    //calculate
+    FusedConvCalculate(container);
+
+    //savedata(output write)
+    memset(filename, 0, 20);    
+    for(int i=0; i<outbanknum; i++){
+        sprintf(filename, "%s%d", BANK_BASE_FILENAME, outstartbank + i);
+        FILE* mfile;
+        mfile = fopen(filename, "wb");
+        if(mfile == NULL){
+            perror("Error opening file for writing");
+            return;
+        }
+        if(cmd.outsize - i*BANKSIZE > BANKSIZE){
+            fwrite(outbuffer + i*BANKSIZE/4, sizeof(char), BANKSIZE, mfile);
+        }else{
+            fwrite(outbuffer + i*BANKSIZE/4, sizeof(char), cmd.outsize - i*BANKSIZE, mfile);
+        }
+        fclose(mfile);
+    }
+
+    //arb bank release
+    bankRelease(cmd.instID, 0);
+    bankRelease(cmd.instID, 1);
+    bankRelease(cmd.instID, 2);
+
+    //bank unlock
+    bankUnLock(input_startbank, input_endbank-input_startbank+1);
+    bankUnLock(kernel_startbank, kernel_endbank-kernel_startbank+1);
+    bankUnLock(bias_startbank, bias_endbank-bias_startbank+1);
+    bankUnLock(outstartbank, outbanknum);
+    
+    free(inputbuffer);
+    free(kernelbuffer);
+    free(biasbuffer);
+    free(outbuffer);
+    
+}
+
 
 void runSigmoid(Inst cmd){
     DataStruct container;
@@ -445,6 +617,8 @@ void runMul(Inst cmd){
     container.arg_f[0] = Xbuffer;
     container.arg_f[1] = Ybuffer;
     container.arg_f[2] = outbuffer;
+
+    
 
     //calculate
     MulCalculate(container);

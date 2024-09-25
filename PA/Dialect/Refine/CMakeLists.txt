@@ -18,6 +18,7 @@ add_onnx_mlir_library(OMRefineOps
   RefineOps/Slice/Slice.cpp
   RefineOps/Sub/Sub.cpp
   RefineOps/Div/Div.cpp
+  RefineOps/FusedConv/FusedConv.cpp
 
   DEPENDS
   # OMLayoutHelper
@@ -35,6 +36,7 @@ add_onnx_mlir_library(OMRefineOps
   OMONNXRefineSliceIncGen
   OMONNXRefineSubIncGen
   OMONNXRefineDivIncGen
+  OMONNXRefineFusedConvIncGen
   OMShapeInferenceOpInterfaceIncGen
 
   LINK_LIBS PRIVATE

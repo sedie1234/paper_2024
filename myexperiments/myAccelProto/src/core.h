@@ -13,7 +13,8 @@ enum{
     MAXPOOLTYPE,
     SOFTMAXTYPE,
     SUBTYPE,
-    DIVTYPE
+    DIVTYPE,
+    FUSEDCONVTYPE
 };
 
 
@@ -27,6 +28,7 @@ typedef struct {
 void runCore(int order);
 
 void runConv(Inst cmd);
+void runFusedConv(Inst cmd);
 void runSigmoid(Inst cmd);
 void runMul(Inst cmd);
 void runAdd(Inst cmd);

@@ -4,10 +4,12 @@ from onnx import helper, shape_inference, TensorProto
 # Load the original model
 model = onnx.load("yolov8n.onnx")
 
+# origin_model = onnx.load("yolov8n.onnx")
+
 # Tensor 이름을 기준으로 나눌 지점 설정
-filename1 = '_1_part1.onnx'
-filename2 = '_1_part2.onnx'
-split_tensor = "/model.0/conv/Conv_output_0"
+filename1 = '_3_part1.onnx'
+filename2 = '_3_part2.onnx'
+split_tensor = "/model.0/act/Mul_output_0"
 
 # 모델에 대한 shape inference 실행 (출력 형상을 추론하기 위해)
 inferred_model = shape_inference.infer_shapes(model)
@@ -44,13 +46,18 @@ for node in model.graph.node:
 part1_initializers = []
 part2_initializers = []
 
-# 모든 노드 확인하여 Split_157이 출력인 경우 찾기
+# Split_157 / Split_184
 
 # 모든 노드 확인하여 Split_157이 출력인 경우 찾기
 for node in model.graph.node:
     if "onnx::Split_157" in node.output:
         print(f"Node producing 'onnx::Split_157': {node.name}")
         part2_nodes.append(node)
+
+# for node in origin_model.graph.node:
+#     if "onnx::Split_184" in node.output:
+#         print(f"Node producing 'onnx::Split_184': {node.name}")
+#         part2_nodes.append(node)
 
 
 for node in part2_nodes:

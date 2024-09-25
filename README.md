@@ -1,7 +1,6 @@
-# paper_2024 : Uppering and Blocking on onnx-mlir for Accelerator
-
-> 1. onnx-mlir에서 지원하는 operation에 대해 acceleration card로 매핑할 수 있게 하기
-> 2. uppering이란 과정 만들기
+# paper_2024 : Refine-Core Structure with onnx-mlir
+> 1. Refine-Core 구조
+> 2. Runtime을 통해 accelerator 연결
 > 3. 성능측정
 
 # 0. Install

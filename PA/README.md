@@ -45,7 +45,7 @@ accelerator에 가까운 기능들을 수행하는 dialect
 ## 2. usage
 1. onnx-mlir/src/Accelerator에 복사
 2. onnxmlir-build.sh 수정 후 실행
-3. onnx-mlir을 원하는 위치에 복사하여 사용 - [예시]()
+3. onnx-mlir을 원하는 위치에 복사하여 사용 - [예시](https://github.com/sedie1234/paper_2024/tree/main/myexperiments/yolov8n)
 
 ### build && install
 ```
